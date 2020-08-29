@@ -25,8 +25,8 @@ mod utils {
     }
 }
 pub mod types {
-    use serde::{Deserialize, Serialize};
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "An object of this type can be returned on every function call, in case of an error"]
     pub struct Error {
         #[doc = "Error code; subject to future changes. If the error code is 406, the error message must not be processed in any way and must not be displayed to the user"]
@@ -34,10 +34,32 @@ pub mod types {
         #[doc = "Error message; subject to future changes"]
         pub message: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Error {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Error), 2usize + 1)?;
+            state.serialize_field(stringify!(code), &self.code)?;
+            state.serialize_field(stringify!(message), &self.message)?;
+            state.serialize_field("@type", "error")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "An object of this type is returned on a successful function call for certain functions"]
     pub struct Ok {}
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Ok {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Ok), 0usize + 1)?;
+            state.serialize_field("@type", "ok")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains parameters for TDLib initialization"]
     pub struct TdlibParameters {
         #[doc = "If set to true, the Telegram test environment will be used instead of the production environment"]
@@ -70,6 +92,38 @@ pub mod types {
         pub enable_storage_optimizer: bool,
         #[doc = "If set to true, original file names will be ignored. Otherwise, downloaded files will be saved under names as close as possible to the original name"]
         pub ignore_file_names: bool,
+    }
+    impl Serialize for TdlibParameters {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(TdlibParameters), 15usize + 1)?;
+            state.serialize_field(stringify!(use_test_dc), &self.use_test_dc)?;
+            state.serialize_field(stringify!(database_directory), &self.database_directory)?;
+            state.serialize_field(stringify!(files_directory), &self.files_directory)?;
+            state.serialize_field(stringify!(use_file_database), &self.use_file_database)?;
+            state.serialize_field(
+                stringify!(use_chat_info_database),
+                &self.use_chat_info_database,
+            )?;
+            state.serialize_field(stringify!(use_message_database), &self.use_message_database)?;
+            state.serialize_field(stringify!(use_secret_chats), &self.use_secret_chats)?;
+            state.serialize_field(stringify!(api_id), &self.api_id)?;
+            state.serialize_field(stringify!(api_hash), &self.api_hash)?;
+            state.serialize_field(stringify!(system_language_code), &self.system_language_code)?;
+            state.serialize_field(stringify!(device_model), &self.device_model)?;
+            state.serialize_field(stringify!(system_version), &self.system_version)?;
+            state.serialize_field(stringify!(application_version), &self.application_version)?;
+            state.serialize_field(
+                stringify!(enable_storage_optimizer),
+                &self.enable_storage_optimizer,
+            )?;
+            state.serialize_field(stringify!(ignore_file_names), &self.ignore_file_names)?;
+            state.serialize_field("@type", "tdlibParameters")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "An authentication code is delivered via a private Telegram message, which can be viewed in another client"]
@@ -105,7 +159,7 @@ pub mod types {
         AuthenticationCodeTypeCall(AuthenticationCodeTypeCall),
         AuthenticationCodeTypeFlashCall(AuthenticationCodeTypeFlashCall),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Information about the authentication code that was sent"]
     pub struct AuthenticationCodeInfo {
         #[doc = "A phone number that is being authenticated"]
@@ -119,7 +173,22 @@ pub mod types {
         #[doc = "Timeout before the code should be re-sent, in seconds"]
         pub timeout: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for AuthenticationCodeInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(AuthenticationCodeInfo), 4usize + 1)?;
+            state.serialize_field(stringify!(phone_number), &self.phone_number)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field(stringify!(next_type), &self.next_type)?;
+            state.serialize_field(stringify!(timeout), &self.timeout)?;
+            state.serialize_field("@type", "authenticationCodeInfo")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Information about the email address authentication code that was sent"]
     pub struct EmailAddressAuthenticationCodeInfo {
         #[doc = "Pattern of the email address to which an authentication code was sent"]
@@ -127,7 +196,23 @@ pub mod types {
         #[doc = "Length of the code; 0 if unknown"]
         pub length: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for EmailAddressAuthenticationCodeInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer
+                .serialize_struct(stringify!(EmailAddressAuthenticationCodeInfo), 2usize + 1)?;
+            state.serialize_field(
+                stringify!(email_address_pattern),
+                &self.email_address_pattern,
+            )?;
+            state.serialize_field(stringify!(length), &self.length)?;
+            state.serialize_field("@type", "emailAddressAuthenticationCodeInfo")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a part of the text that needs to be formatted in some unusual way"]
     pub struct TextEntity {
         #[doc = "Offset of the entity in UTF-16 code units"]
@@ -138,13 +223,37 @@ pub mod types {
         #[doc = "Type of the entity"]
         pub type_: TextEntityType,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for TextEntity {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(TextEntity), 3usize + 1)?;
+            state.serialize_field(stringify!(offset), &self.offset)?;
+            state.serialize_field(stringify!(length), &self.length)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field("@type", "textEntity")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of text entities"]
     pub struct TextEntities {
         #[doc = "List of text entities"]
         pub entities: Vec<TextEntity>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for TextEntities {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(TextEntities), 1usize + 1)?;
+            state.serialize_field(stringify!(entities), &self.entities)?;
+            state.serialize_field("@type", "textEntities")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A text with some entities"]
     pub struct FormattedText {
         #[doc = "The text"]
@@ -152,7 +261,19 @@ pub mod types {
         #[doc = "Entities contained in the text. Entities can be nested, but must not mutually intersect with each other. Pre, Code and PreCode entities can't contain other entities. Bold, Italic, Underline and Strikethrough entities can contain and to be contained in all other entities. All other entities can't contain each other"]
         pub entities: Vec<TextEntity>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for FormattedText {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(FormattedText), 2usize + 1)?;
+            state.serialize_field(stringify!(text), &self.text)?;
+            state.serialize_field(stringify!(entities), &self.entities)?;
+            state.serialize_field("@type", "formattedText")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains Telegram terms of service"]
     pub struct TermsOfService {
         #[doc = "Text of the terms of service"]
@@ -161,6 +282,19 @@ pub mod types {
         pub min_user_age: i32,
         #[doc = "True, if a blocking popup with terms of service must be shown to the user"]
         pub show_popup: bool,
+    }
+    impl Serialize for TermsOfService {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(TermsOfService), 3usize + 1)?;
+            state.serialize_field(stringify!(text), &self.text)?;
+            state.serialize_field(stringify!(min_user_age), &self.min_user_age)?;
+            state.serialize_field(stringify!(show_popup), &self.show_popup)?;
+            state.serialize_field("@type", "termsOfService")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "TDLib needs TdlibParameters for initialization"]
@@ -233,7 +367,7 @@ pub mod types {
         AuthorizationStateClosing(AuthorizationStateClosing),
         AuthorizationStateClosed(AuthorizationStateClosed),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents the current state of 2-step verification"]
     pub struct PasswordState {
         #[doc = "True, if a 2-step verification password is set"]
@@ -248,13 +382,49 @@ pub mod types {
         #[doc = "Information about the recovery email address to which the confirmation email was sent; may be null"]
         pub recovery_email_address_code_info: Option<EmailAddressAuthenticationCodeInfo>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PasswordState {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(PasswordState), 5usize + 1)?;
+            state.serialize_field(stringify!(has_password), &self.has_password)?;
+            state.serialize_field(stringify!(password_hint), &self.password_hint)?;
+            state.serialize_field(
+                stringify!(has_recovery_email_address),
+                &self.has_recovery_email_address,
+            )?;
+            state.serialize_field(stringify!(has_passport_data), &self.has_passport_data)?;
+            state.serialize_field(
+                stringify!(recovery_email_address_code_info),
+                &self.recovery_email_address_code_info,
+            )?;
+            state.serialize_field("@type", "passwordState")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about the current recovery email address"]
     pub struct RecoveryEmailAddress {
         #[doc = "Recovery email address"]
         pub recovery_email_address: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for RecoveryEmailAddress {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(RecoveryEmailAddress), 1usize + 1)?;
+            state.serialize_field(
+                stringify!(recovery_email_address),
+                &self.recovery_email_address,
+            )?;
+            state.serialize_field("@type", "recoveryEmailAddress")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Returns information about the availability of a temporary password, which can be used for payments"]
     pub struct TemporaryPasswordState {
         #[doc = "True, if a temporary password is available"]
@@ -262,7 +432,20 @@ pub mod types {
         #[doc = "Time left before the temporary password expires, in seconds"]
         pub valid_for: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for TemporaryPasswordState {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(TemporaryPasswordState), 2usize + 1)?;
+            state.serialize_field(stringify!(has_password), &self.has_password)?;
+            state.serialize_field(stringify!(valid_for), &self.valid_for)?;
+            state.serialize_field("@type", "temporaryPasswordState")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a local file"]
     pub struct LocalFile {
         #[doc = "Local path to the locally available file part; may be empty"]
@@ -282,7 +465,34 @@ pub mod types {
         #[doc = "Total downloaded file bytes. Should be used only for calculating download progress. The actual file size may be bigger, and some parts of it may contain garbage"]
         pub downloaded_size: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for LocalFile {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(LocalFile), 8usize + 1)?;
+            state.serialize_field(stringify!(path), &self.path)?;
+            state.serialize_field(stringify!(can_be_downloaded), &self.can_be_downloaded)?;
+            state.serialize_field(stringify!(can_be_deleted), &self.can_be_deleted)?;
+            state.serialize_field(
+                stringify!(is_downloading_active),
+                &self.is_downloading_active,
+            )?;
+            state.serialize_field(
+                stringify!(is_downloading_completed),
+                &self.is_downloading_completed,
+            )?;
+            state.serialize_field(stringify!(download_offset), &self.download_offset)?;
+            state.serialize_field(
+                stringify!(downloaded_prefix_size),
+                &self.downloaded_prefix_size,
+            )?;
+            state.serialize_field(stringify!(downloaded_size), &self.downloaded_size)?;
+            state.serialize_field("@type", "localFile")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a remote file"]
     pub struct RemoteFile {
         #[doc = "Remote file identifier; may be empty. Can be used across application restarts or even from other devices for the current user. Uniquely identifies a file, but a file can have a lot of different valid identifiers. If the ID starts with \"http://\" or \"https://\", it represents the HTTP URL of the file. TDLib is currently unable to download files if only their URL is known. If downloadFile is called on such a file or if it is sent to a secret chat, TDLib starts a file generation process by sending updateFileGenerationStart to the client with the HTTP URL in the original_path and \"#url#\" as the conversion string. Clients should generate the file by downloading it to the specified location"]
@@ -296,7 +506,25 @@ pub mod types {
         #[doc = "Size of the remote available part of the file; 0 if unknown"]
         pub uploaded_size: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for RemoteFile {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(RemoteFile), 5usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(unique_id), &self.unique_id)?;
+            state.serialize_field(stringify!(is_uploading_active), &self.is_uploading_active)?;
+            state.serialize_field(
+                stringify!(is_uploading_completed),
+                &self.is_uploading_completed,
+            )?;
+            state.serialize_field(stringify!(uploaded_size), &self.uploaded_size)?;
+            state.serialize_field("@type", "remoteFile")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a file"]
     pub struct File {
         #[doc = "Unique file identifier"]
@@ -309,6 +537,21 @@ pub mod types {
         pub local: LocalFile,
         #[doc = "Information about the remote copy of the file"]
         pub remote: RemoteFile,
+    }
+    impl Serialize for File {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(File), 5usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(size), &self.size)?;
+            state.serialize_field(stringify!(expected_size), &self.expected_size)?;
+            state.serialize_field(stringify!(local), &self.local)?;
+            state.serialize_field(stringify!(remote), &self.remote)?;
+            state.serialize_field("@type", "file")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A file defined by its unique ID"]
@@ -348,7 +591,7 @@ pub mod types {
         InputFileLocal(InputFileLocal),
         InputFileGenerated(InputFileGenerated),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Photo description"]
     pub struct PhotoSize {
         #[serde(rename = "type")]
@@ -361,7 +604,21 @@ pub mod types {
         #[doc = "Photo height"]
         pub height: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PhotoSize {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(PhotoSize), 4usize + 1)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field(stringify!(photo), &self.photo)?;
+            state.serialize_field(stringify!(width), &self.width)?;
+            state.serialize_field(stringify!(height), &self.height)?;
+            state.serialize_field("@type", "photoSize")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Thumbnail image of a very poor quality and low resolution"]
     pub struct Minithumbnail {
         #[doc = "Thumbnail width, usually doesn't exceed 40"]
@@ -370,6 +627,19 @@ pub mod types {
         pub height: i32,
         #[doc = "The thumbnail in JPEG format"]
         pub data: String,
+    }
+    impl Serialize for Minithumbnail {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Minithumbnail), 3usize + 1)?;
+            state.serialize_field(stringify!(width), &self.width)?;
+            state.serialize_field(stringify!(height), &self.height)?;
+            state.serialize_field(stringify!(data), &self.data)?;
+            state.serialize_field("@type", "minithumbnail")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A mask should be placed relatively to the forehead"]
@@ -393,7 +663,7 @@ pub mod types {
         MaskPointMouth(MaskPointMouth),
         MaskPointChin(MaskPointChin),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Position on a photo where a mask should be placed"]
     pub struct MaskPosition {
         #[doc = "Part of the face, relative to which the mask should be placed"]
@@ -405,7 +675,21 @@ pub mod types {
         #[doc = "Mask scaling coefficient. (For example, 2.0 means a doubled size)"]
         pub scale: f64,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for MaskPosition {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(MaskPosition), 4usize + 1)?;
+            state.serialize_field(stringify!(point), &self.point)?;
+            state.serialize_field(stringify!(x_shift), &self.x_shift)?;
+            state.serialize_field(stringify!(y_shift), &self.y_shift)?;
+            state.serialize_field(stringify!(scale), &self.scale)?;
+            state.serialize_field("@type", "maskPosition")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes one answer option of a poll"]
     pub struct PollOption {
         #[doc = "Option text, 1-100 characters"]
@@ -418,6 +702,21 @@ pub mod types {
         pub is_chosen: bool,
         #[doc = "True, if the option is being chosen by a pending setPollAnswer request"]
         pub is_being_chosen: bool,
+    }
+    impl Serialize for PollOption {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(PollOption), 5usize + 1)?;
+            state.serialize_field(stringify!(text), &self.text)?;
+            state.serialize_field(stringify!(voter_count), &self.voter_count)?;
+            state.serialize_field(stringify!(vote_percentage), &self.vote_percentage)?;
+            state.serialize_field(stringify!(is_chosen), &self.is_chosen)?;
+            state.serialize_field(stringify!(is_being_chosen), &self.is_being_chosen)?;
+            state.serialize_field("@type", "pollOption")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A regular poll"]
@@ -439,7 +738,7 @@ pub mod types {
         PollTypeRegular(PollTypeRegular),
         PollTypeQuiz(PollTypeQuiz),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes an animation file. The animation must be encoded in GIF or MPEG4 format"]
     pub struct Animation {
         #[doc = "Duration of the animation, in seconds; as defined by the sender"]
@@ -461,7 +760,25 @@ pub mod types {
         #[doc = "File containing the animation"]
         pub animation: File,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Animation {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Animation), 8usize + 1)?;
+            state.serialize_field(stringify!(duration), &self.duration)?;
+            state.serialize_field(stringify!(width), &self.width)?;
+            state.serialize_field(stringify!(height), &self.height)?;
+            state.serialize_field(stringify!(file_name), &self.file_name)?;
+            state.serialize_field(stringify!(mime_type), &self.mime_type)?;
+            state.serialize_field(stringify!(minithumbnail), &self.minithumbnail)?;
+            state.serialize_field(stringify!(thumbnail), &self.thumbnail)?;
+            state.serialize_field(stringify!(animation), &self.animation)?;
+            state.serialize_field("@type", "animation")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes an audio file. Audio is usually in MP3 or M4A format"]
     pub struct Audio {
         #[doc = "Duration of the audio, in seconds; as defined by the sender"]
@@ -483,7 +800,31 @@ pub mod types {
         #[doc = "File containing the audio"]
         pub audio: File,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Audio {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Audio), 8usize + 1)?;
+            state.serialize_field(stringify!(duration), &self.duration)?;
+            state.serialize_field(stringify!(title), &self.title)?;
+            state.serialize_field(stringify!(performer), &self.performer)?;
+            state.serialize_field(stringify!(file_name), &self.file_name)?;
+            state.serialize_field(stringify!(mime_type), &self.mime_type)?;
+            state.serialize_field(
+                stringify!(album_cover_minithumbnail),
+                &self.album_cover_minithumbnail,
+            )?;
+            state.serialize_field(
+                stringify!(album_cover_thumbnail),
+                &self.album_cover_thumbnail,
+            )?;
+            state.serialize_field(stringify!(audio), &self.audio)?;
+            state.serialize_field("@type", "audio")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a document of any type"]
     pub struct Document {
         #[doc = "Original name of the file; as defined by the sender"]
@@ -499,7 +840,22 @@ pub mod types {
         #[doc = "File containing the document"]
         pub document: File,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Document {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Document), 5usize + 1)?;
+            state.serialize_field(stringify!(file_name), &self.file_name)?;
+            state.serialize_field(stringify!(mime_type), &self.mime_type)?;
+            state.serialize_field(stringify!(minithumbnail), &self.minithumbnail)?;
+            state.serialize_field(stringify!(thumbnail), &self.thumbnail)?;
+            state.serialize_field(stringify!(document), &self.document)?;
+            state.serialize_field("@type", "document")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a photo"]
     pub struct Photo {
         #[doc = "True, if stickers were added to the photo"]
@@ -510,7 +866,20 @@ pub mod types {
         #[doc = "Available variants of the photo, in different sizes"]
         pub sizes: Vec<PhotoSize>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Photo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Photo), 3usize + 1)?;
+            state.serialize_field(stringify!(has_stickers), &self.has_stickers)?;
+            state.serialize_field(stringify!(minithumbnail), &self.minithumbnail)?;
+            state.serialize_field(stringify!(sizes), &self.sizes)?;
+            state.serialize_field("@type", "photo")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a sticker"]
     pub struct Sticker {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -535,7 +904,26 @@ pub mod types {
         #[doc = "File containing the sticker"]
         pub sticker: File,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Sticker {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Sticker), 9usize + 1)?;
+            state.serialize_field(stringify!(set_id), &self.set_id)?;
+            state.serialize_field(stringify!(width), &self.width)?;
+            state.serialize_field(stringify!(height), &self.height)?;
+            state.serialize_field(stringify!(emoji), &self.emoji)?;
+            state.serialize_field(stringify!(is_animated), &self.is_animated)?;
+            state.serialize_field(stringify!(is_mask), &self.is_mask)?;
+            state.serialize_field(stringify!(mask_position), &self.mask_position)?;
+            state.serialize_field(stringify!(thumbnail), &self.thumbnail)?;
+            state.serialize_field(stringify!(sticker), &self.sticker)?;
+            state.serialize_field("@type", "sticker")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a video file"]
     pub struct Video {
         #[doc = "Duration of the video, in seconds; as defined by the sender"]
@@ -561,7 +949,27 @@ pub mod types {
         #[doc = "File containing the video"]
         pub video: File,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Video {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Video), 10usize + 1)?;
+            state.serialize_field(stringify!(duration), &self.duration)?;
+            state.serialize_field(stringify!(width), &self.width)?;
+            state.serialize_field(stringify!(height), &self.height)?;
+            state.serialize_field(stringify!(file_name), &self.file_name)?;
+            state.serialize_field(stringify!(mime_type), &self.mime_type)?;
+            state.serialize_field(stringify!(has_stickers), &self.has_stickers)?;
+            state.serialize_field(stringify!(supports_streaming), &self.supports_streaming)?;
+            state.serialize_field(stringify!(minithumbnail), &self.minithumbnail)?;
+            state.serialize_field(stringify!(thumbnail), &self.thumbnail)?;
+            state.serialize_field(stringify!(video), &self.video)?;
+            state.serialize_field("@type", "video")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a video note. The video must be equal in width and height, cropped to a circle, and stored in MPEG4 format"]
     pub struct VideoNote {
         #[doc = "Duration of the video, in seconds; as defined by the sender"]
@@ -577,7 +985,22 @@ pub mod types {
         #[doc = "File containing the video"]
         pub video: File,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for VideoNote {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(VideoNote), 5usize + 1)?;
+            state.serialize_field(stringify!(duration), &self.duration)?;
+            state.serialize_field(stringify!(length), &self.length)?;
+            state.serialize_field(stringify!(minithumbnail), &self.minithumbnail)?;
+            state.serialize_field(stringify!(thumbnail), &self.thumbnail)?;
+            state.serialize_field(stringify!(video), &self.video)?;
+            state.serialize_field("@type", "videoNote")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a voice note. The voice note must be encoded with the Opus codec, and stored inside an OGG container. Voice notes can have only a single audio channel"]
     pub struct VoiceNote {
         #[doc = "Duration of the voice note, in seconds; as defined by the sender"]
@@ -589,7 +1012,21 @@ pub mod types {
         #[doc = "File containing the voice note"]
         pub voice: File,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for VoiceNote {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(VoiceNote), 4usize + 1)?;
+            state.serialize_field(stringify!(duration), &self.duration)?;
+            state.serialize_field(stringify!(waveform), &self.waveform)?;
+            state.serialize_field(stringify!(mime_type), &self.mime_type)?;
+            state.serialize_field(stringify!(voice), &self.voice)?;
+            state.serialize_field("@type", "voiceNote")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a user contact"]
     pub struct Contact {
         #[doc = "Phone number of the user"]
@@ -603,7 +1040,22 @@ pub mod types {
         #[doc = "Identifier of the user, if known; otherwise 0"]
         pub user_id: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Contact {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Contact), 5usize + 1)?;
+            state.serialize_field(stringify!(phone_number), &self.phone_number)?;
+            state.serialize_field(stringify!(first_name), &self.first_name)?;
+            state.serialize_field(stringify!(last_name), &self.last_name)?;
+            state.serialize_field(stringify!(vcard), &self.vcard)?;
+            state.serialize_field(stringify!(user_id), &self.user_id)?;
+            state.serialize_field("@type", "contact")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a location on planet Earth"]
     pub struct Location {
         #[doc = "Latitude of the location in degrees; as defined by the sender"]
@@ -611,7 +1063,19 @@ pub mod types {
         #[doc = "Longitude of the location, in degrees; as defined by the sender"]
         pub longitude: f64,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Location {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Location), 2usize + 1)?;
+            state.serialize_field(stringify!(latitude), &self.latitude)?;
+            state.serialize_field(stringify!(longitude), &self.longitude)?;
+            state.serialize_field("@type", "location")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a venue"]
     pub struct Venue {
         #[doc = "Venue location; as defined by the sender"]
@@ -628,7 +1092,23 @@ pub mod types {
         #[doc = "Type of the venue in the provider database; as defined by the sender"]
         pub type_: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Venue {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Venue), 6usize + 1)?;
+            state.serialize_field(stringify!(location), &self.location)?;
+            state.serialize_field(stringify!(title), &self.title)?;
+            state.serialize_field(stringify!(address), &self.address)?;
+            state.serialize_field(stringify!(provider), &self.provider)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field("@type", "venue")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a game"]
     pub struct Game {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -648,7 +1128,24 @@ pub mod types {
         #[doc = "Game animation; may be null"]
         pub animation: Option<Animation>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Game {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Game), 7usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(short_name), &self.short_name)?;
+            state.serialize_field(stringify!(title), &self.title)?;
+            state.serialize_field(stringify!(text), &self.text)?;
+            state.serialize_field(stringify!(description), &self.description)?;
+            state.serialize_field(stringify!(photo), &self.photo)?;
+            state.serialize_field(stringify!(animation), &self.animation)?;
+            state.serialize_field("@type", "game")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a poll"]
     pub struct Poll {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -670,7 +1167,28 @@ pub mod types {
         #[doc = "True, if the poll is closed"]
         pub is_closed: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Poll {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Poll), 8usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(question), &self.question)?;
+            state.serialize_field(stringify!(options), &self.options)?;
+            state.serialize_field(stringify!(total_voter_count), &self.total_voter_count)?;
+            state.serialize_field(
+                stringify!(recent_voter_user_ids),
+                &self.recent_voter_user_ids,
+            )?;
+            state.serialize_field(stringify!(is_anonymous), &self.is_anonymous)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field(stringify!(is_closed), &self.is_closed)?;
+            state.serialize_field("@type", "poll")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a user profile photo"]
     pub struct ProfilePhoto {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -681,13 +1199,38 @@ pub mod types {
         #[doc = "A big (640x640) user profile photo. The file can be downloaded only before the photo is changed"]
         pub big: File,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ProfilePhoto {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(ProfilePhoto), 3usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(small), &self.small)?;
+            state.serialize_field(stringify!(big), &self.big)?;
+            state.serialize_field("@type", "profilePhoto")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes the photo of a chat"]
     pub struct ChatPhoto {
         #[doc = "A small (160x160) chat photo. The file can be downloaded only before the photo is changed"]
         pub small: File,
         #[doc = "A big (640x640) chat photo. The file can be downloaded only before the photo is changed"]
         pub big: File,
+    }
+    impl Serialize for ChatPhoto {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(ChatPhoto), 2usize + 1)?;
+            state.serialize_field(stringify!(small), &self.small)?;
+            state.serialize_field(stringify!(big), &self.big)?;
+            state.serialize_field("@type", "chatPhoto")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A regular user"]
@@ -722,7 +1265,7 @@ pub mod types {
         UserTypeBot(UserTypeBot),
         UserTypeUnknown(UserTypeUnknown),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents commands supported by a bot"]
     pub struct BotCommand {
         #[doc = "Text of the bot command"]
@@ -730,7 +1273,19 @@ pub mod types {
         #[doc = "Represents commands supported by a bot"]
         pub description: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for BotCommand {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(BotCommand), 2usize + 1)?;
+            state.serialize_field(stringify!(command), &self.command)?;
+            state.serialize_field(stringify!(description), &self.description)?;
+            state.serialize_field("@type", "botCommand")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Provides information about a bot and its supported commands"]
     pub struct BotInfo {
         #[doc = "Provides information about a bot and its supported commands"]
@@ -738,7 +1293,19 @@ pub mod types {
         #[doc = "A list of commands supported by the bot"]
         pub commands: Vec<BotCommand>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for BotInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(BotInfo), 2usize + 1)?;
+            state.serialize_field(stringify!(description), &self.description)?;
+            state.serialize_field(stringify!(commands), &self.commands)?;
+            state.serialize_field("@type", "botInfo")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a location to which a chat is connected"]
     pub struct ChatLocation {
         #[doc = "The location"]
@@ -746,7 +1313,19 @@ pub mod types {
         #[doc = "Location address; 1-64 characters, as defined by the chat owner"]
         pub address: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ChatLocation {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(ChatLocation), 2usize + 1)?;
+            state.serialize_field(stringify!(location), &self.location)?;
+            state.serialize_field(stringify!(address), &self.address)?;
+            state.serialize_field("@type", "chatLocation")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a user"]
     pub struct User {
         #[doc = "User identifier"]
@@ -785,7 +1364,33 @@ pub mod types {
         #[doc = "IETF language tag of the user's language; only available to bots"]
         pub language_code: Option<String>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for User {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(User), 16usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(first_name), &self.first_name)?;
+            state.serialize_field(stringify!(last_name), &self.last_name)?;
+            state.serialize_field(stringify!(username), &self.username)?;
+            state.serialize_field(stringify!(phone_number), &self.phone_number)?;
+            state.serialize_field(stringify!(status), &self.status)?;
+            state.serialize_field(stringify!(profile_photo), &self.profile_photo)?;
+            state.serialize_field(stringify!(is_contact), &self.is_contact)?;
+            state.serialize_field(stringify!(is_mutual_contact), &self.is_mutual_contact)?;
+            state.serialize_field(stringify!(is_verified), &self.is_verified)?;
+            state.serialize_field(stringify!(is_support), &self.is_support)?;
+            state.serialize_field(stringify!(restriction_reason), &self.restriction_reason)?;
+            state.serialize_field(stringify!(is_scam), &self.is_scam)?;
+            state.serialize_field(stringify!(have_access), &self.have_access)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field(stringify!(language_code), &self.language_code)?;
+            state.serialize_field("@type", "user")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains full information about a user (except the full list of profile photos)"]
     pub struct UserFullInfo {
         #[doc = "True, if the user is blacklisted by the current user"]
@@ -806,7 +1411,31 @@ pub mod types {
         #[doc = "If the user is a bot, information about the bot; may be null"]
         pub bot_info: Option<BotInfo>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for UserFullInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(UserFullInfo), 8usize + 1)?;
+            state.serialize_field(stringify!(is_blocked), &self.is_blocked)?;
+            state.serialize_field(stringify!(can_be_called), &self.can_be_called)?;
+            state.serialize_field(stringify!(has_private_calls), &self.has_private_calls)?;
+            state.serialize_field(
+                stringify!(need_phone_number_privacy_exception),
+                &self.need_phone_number_privacy_exception,
+            )?;
+            state.serialize_field(stringify!(bio), &self.bio)?;
+            state.serialize_field(stringify!(share_text), &self.share_text)?;
+            state.serialize_field(
+                stringify!(group_in_common_count),
+                &self.group_in_common_count,
+            )?;
+            state.serialize_field(stringify!(bot_info), &self.bot_info)?;
+            state.serialize_field("@type", "userFullInfo")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains full information about a user profile photo"]
     pub struct UserProfilePhoto {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -817,7 +1446,21 @@ pub mod types {
         #[doc = "Available variants of the user photo, in different sizes"]
         pub sizes: Vec<PhotoSize>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for UserProfilePhoto {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(UserProfilePhoto), 3usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(added_date), &self.added_date)?;
+            state.serialize_field(stringify!(sizes), &self.sizes)?;
+            state.serialize_field("@type", "userProfilePhoto")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains part of the list of user photos"]
     pub struct UserProfilePhotos {
         #[doc = "Total number of user profile photos"]
@@ -825,7 +1468,20 @@ pub mod types {
         #[doc = "A list of photos"]
         pub photos: Vec<UserProfilePhoto>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for UserProfilePhotos {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(UserProfilePhotos), 2usize + 1)?;
+            state.serialize_field(stringify!(total_count), &self.total_count)?;
+            state.serialize_field(stringify!(photos), &self.photos)?;
+            state.serialize_field("@type", "userProfilePhotos")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a list of users"]
     pub struct Users {
         #[doc = "Approximate total count of users found"]
@@ -833,7 +1489,19 @@ pub mod types {
         #[doc = "A list of user identifiers"]
         pub user_ids: Vec<i32>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Users {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Users), 2usize + 1)?;
+            state.serialize_field(stringify!(total_count), &self.total_count)?;
+            state.serialize_field(stringify!(user_ids), &self.user_ids)?;
+            state.serialize_field("@type", "users")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a chat administrator"]
     pub struct ChatAdministrator {
         #[doc = "User identifier of the administrator"]
@@ -843,13 +1511,39 @@ pub mod types {
         #[doc = "True, if the user is the owner of the chat"]
         pub is_owner: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ChatAdministrator {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(ChatAdministrator), 3usize + 1)?;
+            state.serialize_field(stringify!(user_id), &self.user_id)?;
+            state.serialize_field(stringify!(custom_title), &self.custom_title)?;
+            state.serialize_field(stringify!(is_owner), &self.is_owner)?;
+            state.serialize_field("@type", "chatAdministrator")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a list of chat administrators"]
     pub struct ChatAdministrators {
         #[doc = "A list of chat administrators"]
         pub administrators: Vec<ChatAdministrator>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ChatAdministrators {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(ChatAdministrators), 1usize + 1)?;
+            state.serialize_field(stringify!(administrators), &self.administrators)?;
+            state.serialize_field("@type", "chatAdministrators")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes actions that a user is allowed to take in a chat"]
     pub struct ChatPermissions {
         #[doc = "True, if the user can send text messages, contacts, locations, and venues"]
@@ -868,6 +1562,33 @@ pub mod types {
         pub can_invite_users: bool,
         #[doc = "True, if the user can pin messages"]
         pub can_pin_messages: bool,
+    }
+    impl Serialize for ChatPermissions {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(ChatPermissions), 8usize + 1)?;
+            state.serialize_field(stringify!(can_send_messages), &self.can_send_messages)?;
+            state.serialize_field(
+                stringify!(can_send_media_messages),
+                &self.can_send_media_messages,
+            )?;
+            state.serialize_field(stringify!(can_send_polls), &self.can_send_polls)?;
+            state.serialize_field(
+                stringify!(can_send_other_messages),
+                &self.can_send_other_messages,
+            )?;
+            state.serialize_field(
+                stringify!(can_add_web_page_previews),
+                &self.can_add_web_page_previews,
+            )?;
+            state.serialize_field(stringify!(can_change_info), &self.can_change_info)?;
+            state.serialize_field(stringify!(can_invite_users), &self.can_invite_users)?;
+            state.serialize_field(stringify!(can_pin_messages), &self.can_pin_messages)?;
+            state.serialize_field("@type", "chatPermissions")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The user is the owner of a chat and has all the administrator privileges"]
@@ -935,7 +1656,7 @@ pub mod types {
         ChatMemberStatusLeft(ChatMemberStatusLeft),
         ChatMemberStatusBanned(ChatMemberStatusBanned),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A user with information about joining/leaving a chat"]
     pub struct ChatMember {
         #[doc = "User identifier of the chat member"]
@@ -950,13 +1671,40 @@ pub mod types {
         #[doc = "If the user is a bot, information about the bot; may be null. Can be null even for a bot if the bot is not a chat member"]
         pub bot_info: Option<BotInfo>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ChatMember {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(ChatMember), 5usize + 1)?;
+            state.serialize_field(stringify!(user_id), &self.user_id)?;
+            state.serialize_field(stringify!(inviter_user_id), &self.inviter_user_id)?;
+            state.serialize_field(stringify!(joined_chat_date), &self.joined_chat_date)?;
+            state.serialize_field(stringify!(status), &self.status)?;
+            state.serialize_field(stringify!(bot_info), &self.bot_info)?;
+            state.serialize_field("@type", "chatMember")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of chat members"]
     pub struct ChatMembers {
         #[doc = "Approximate total count of chat members found"]
         pub total_count: i32,
         #[doc = "A list of chat members"]
         pub members: Vec<ChatMember>,
+    }
+    impl Serialize for ChatMembers {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(ChatMembers), 2usize + 1)?;
+            state.serialize_field(stringify!(total_count), &self.total_count)?;
+            state.serialize_field(stringify!(members), &self.members)?;
+            state.serialize_field("@type", "chatMembers")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Returns contacts of the user"]
@@ -1034,7 +1782,7 @@ pub mod types {
         SupergroupMembersFilterBanned(SupergroupMembersFilterBanned),
         SupergroupMembersFilterBots(SupergroupMembersFilterBots),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a basic group of 0-200 users (must be upgraded to a supergroup to accommodate more than 200 users)"]
     pub struct BasicGroup {
         #[doc = "Group identifier"]
@@ -1048,7 +1796,25 @@ pub mod types {
         #[doc = "Identifier of the supergroup to which this group was upgraded; 0 if none"]
         pub upgraded_to_supergroup_id: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for BasicGroup {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(BasicGroup), 5usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(member_count), &self.member_count)?;
+            state.serialize_field(stringify!(status), &self.status)?;
+            state.serialize_field(stringify!(is_active), &self.is_active)?;
+            state.serialize_field(
+                stringify!(upgraded_to_supergroup_id),
+                &self.upgraded_to_supergroup_id,
+            )?;
+            state.serialize_field("@type", "basicGroup")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains full information about a basic group"]
     pub struct BasicGroupFullInfo {
         #[doc = "Contains full information about a basic group"]
@@ -1060,7 +1826,22 @@ pub mod types {
         #[doc = "Invite link for this group; available only after it has been generated at least once and only for the group creator"]
         pub invite_link: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for BasicGroupFullInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(BasicGroupFullInfo), 4usize + 1)?;
+            state.serialize_field(stringify!(description), &self.description)?;
+            state.serialize_field(stringify!(creator_user_id), &self.creator_user_id)?;
+            state.serialize_field(stringify!(members), &self.members)?;
+            state.serialize_field(stringify!(invite_link), &self.invite_link)?;
+            state.serialize_field("@type", "basicGroupFullInfo")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a supergroup or channel with zero or more members (subscribers in the case of channels). From the point of view of the system, a channel is a special kind of a supergroup: only administrators can post and see the list of members, and posts from all administrators use the name and photo of the channel instead of individual names and profile photos. Unlike supergroups, channels can have an unlimited number of subscribers"]
     pub struct Supergroup {
         #[doc = "Supergroup or channel identifier"]
@@ -1090,7 +1871,30 @@ pub mod types {
         #[doc = "True, if many users reported this supergroup as a scam"]
         pub is_scam: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Supergroup {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Supergroup), 13usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(username), &self.username)?;
+            state.serialize_field(stringify!(date), &self.date)?;
+            state.serialize_field(stringify!(status), &self.status)?;
+            state.serialize_field(stringify!(member_count), &self.member_count)?;
+            state.serialize_field(stringify!(has_linked_chat), &self.has_linked_chat)?;
+            state.serialize_field(stringify!(has_location), &self.has_location)?;
+            state.serialize_field(stringify!(sign_messages), &self.sign_messages)?;
+            state.serialize_field(stringify!(is_slow_mode_enabled), &self.is_slow_mode_enabled)?;
+            state.serialize_field(stringify!(is_channel), &self.is_channel)?;
+            state.serialize_field(stringify!(is_verified), &self.is_verified)?;
+            state.serialize_field(stringify!(restriction_reason), &self.restriction_reason)?;
+            state.serialize_field(stringify!(is_scam), &self.is_scam)?;
+            state.serialize_field("@type", "supergroup")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains full information about a supergroup or channel"]
     pub struct SupergroupFullInfo {
         #[doc = "Contains full information about a supergroup or channel"]
@@ -1134,6 +1938,48 @@ pub mod types {
         #[doc = "Identifier of the last message in the basic group from which supergroup was upgraded; 0 if none"]
         pub upgraded_from_max_message_id: i64,
     }
+    impl Serialize for SupergroupFullInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(SupergroupFullInfo), 19usize + 1)?;
+            state.serialize_field(stringify!(description), &self.description)?;
+            state.serialize_field(stringify!(member_count), &self.member_count)?;
+            state.serialize_field(stringify!(administrator_count), &self.administrator_count)?;
+            state.serialize_field(stringify!(restricted_count), &self.restricted_count)?;
+            state.serialize_field(stringify!(banned_count), &self.banned_count)?;
+            state.serialize_field(stringify!(linked_chat_id), &self.linked_chat_id)?;
+            state.serialize_field(stringify!(slow_mode_delay), &self.slow_mode_delay)?;
+            state.serialize_field(
+                stringify!(slow_mode_delay_expires_in),
+                &self.slow_mode_delay_expires_in,
+            )?;
+            state.serialize_field(stringify!(can_get_members), &self.can_get_members)?;
+            state.serialize_field(stringify!(can_set_username), &self.can_set_username)?;
+            state.serialize_field(stringify!(can_set_sticker_set), &self.can_set_sticker_set)?;
+            state.serialize_field(stringify!(can_set_location), &self.can_set_location)?;
+            state.serialize_field(stringify!(can_view_statistics), &self.can_view_statistics)?;
+            state.serialize_field(
+                stringify!(is_all_history_available),
+                &self.is_all_history_available,
+            )?;
+            state.serialize_field(stringify!(sticker_set_id), &self.sticker_set_id)?;
+            state.serialize_field(stringify!(location), &self.location)?;
+            state.serialize_field(stringify!(invite_link), &self.invite_link)?;
+            state.serialize_field(
+                stringify!(upgraded_from_basic_group_id),
+                &self.upgraded_from_basic_group_id,
+            )?;
+            state.serialize_field(
+                stringify!(upgraded_from_max_message_id),
+                &self.upgraded_from_max_message_id,
+            )?;
+            state.serialize_field("@type", "supergroupFullInfo")?;
+            state.end()
+        }
+    }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The secret chat is not yet created; waiting for the other user to get online"]
     pub struct SecretChatStatePending {}
@@ -1152,7 +1998,7 @@ pub mod types {
         SecretChatStateReady(SecretChatStateReady),
         SecretChatStateClosed(SecretChatStateClosed),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a secret chat"]
     pub struct SecretChat {
         #[doc = "Secret chat identifier"]
@@ -1169,6 +2015,23 @@ pub mod types {
         pub key_hash: String,
         #[doc = "Secret chat layer; determines features supported by the other client. Video notes are supported if the layer >= 66; nested text entities and underline and strikethrough entities are supported if the layer >= 101"]
         pub layer: i32,
+    }
+    impl Serialize for SecretChat {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(SecretChat), 7usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(user_id), &self.user_id)?;
+            state.serialize_field(stringify!(state), &self.state)?;
+            state.serialize_field(stringify!(is_outbound), &self.is_outbound)?;
+            state.serialize_field(stringify!(ttl), &self.ttl)?;
+            state.serialize_field(stringify!(key_hash), &self.key_hash)?;
+            state.serialize_field(stringify!(layer), &self.layer)?;
+            state.serialize_field("@type", "secretChat")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The message was originally written by a known user"]
@@ -1201,7 +2064,7 @@ pub mod types {
         MessageForwardOriginHiddenUser(MessageForwardOriginHiddenUser),
         MessageForwardOriginChannel(MessageForwardOriginChannel),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a forwarded message"]
     pub struct MessageForwardInfo {
         #[doc = "Origin of a forwarded message"]
@@ -1212,6 +2075,21 @@ pub mod types {
         pub from_chat_id: i64,
         #[doc = "For messages forwarded to the chat with the current user (Saved Messages) or to the channel's discussion group, the identifier of the original message from which the new message was forwarded last time; 0 if unknown"]
         pub from_message_id: i64,
+    }
+    impl Serialize for MessageForwardInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(MessageForwardInfo), 4usize + 1)?;
+            state.serialize_field(stringify!(origin), &self.origin)?;
+            state.serialize_field(stringify!(date), &self.date)?;
+            state.serialize_field(stringify!(from_chat_id), &self.from_chat_id)?;
+            state.serialize_field(stringify!(from_message_id), &self.from_message_id)?;
+            state.serialize_field("@type", "messageForwardInfo")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The message is being sent now, but has not yet been delivered to the server"]
@@ -1236,7 +2114,7 @@ pub mod types {
         MessageSendingStatePending(MessageSendingStatePending),
         MessageSendingStateFailed(MessageSendingStateFailed),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a message"]
     pub struct Message {
         #[doc = "Message identifier, unique for the chat to which the message belongs"]
@@ -1295,7 +2173,51 @@ pub mod types {
         #[doc = "Reply markup for the message; may be null"]
         pub reply_markup: Option<ReplyMarkup>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Message {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Message), 25usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(sender_user_id), &self.sender_user_id)?;
+            state.serialize_field(stringify!(chat_id), &self.chat_id)?;
+            state.serialize_field(stringify!(sending_state), &self.sending_state)?;
+            state.serialize_field(stringify!(scheduling_state), &self.scheduling_state)?;
+            state.serialize_field(stringify!(is_outgoing), &self.is_outgoing)?;
+            state.serialize_field(stringify!(can_be_edited), &self.can_be_edited)?;
+            state.serialize_field(stringify!(can_be_forwarded), &self.can_be_forwarded)?;
+            state.serialize_field(
+                stringify!(can_be_deleted_only_for_self),
+                &self.can_be_deleted_only_for_self,
+            )?;
+            state.serialize_field(
+                stringify!(can_be_deleted_for_all_users),
+                &self.can_be_deleted_for_all_users,
+            )?;
+            state.serialize_field(stringify!(is_channel_post), &self.is_channel_post)?;
+            state.serialize_field(
+                stringify!(contains_unread_mention),
+                &self.contains_unread_mention,
+            )?;
+            state.serialize_field(stringify!(date), &self.date)?;
+            state.serialize_field(stringify!(edit_date), &self.edit_date)?;
+            state.serialize_field(stringify!(forward_info), &self.forward_info)?;
+            state.serialize_field(stringify!(reply_to_message_id), &self.reply_to_message_id)?;
+            state.serialize_field(stringify!(ttl), &self.ttl)?;
+            state.serialize_field(stringify!(ttl_expires_in), &self.ttl_expires_in)?;
+            state.serialize_field(stringify!(via_bot_user_id), &self.via_bot_user_id)?;
+            state.serialize_field(stringify!(author_signature), &self.author_signature)?;
+            state.serialize_field(stringify!(views), &self.views)?;
+            state.serialize_field(stringify!(media_album_id), &self.media_album_id)?;
+            state.serialize_field(stringify!(restriction_reason), &self.restriction_reason)?;
+            state.serialize_field(stringify!(content), &self.content)?;
+            state.serialize_field(stringify!(reply_markup), &self.reply_markup)?;
+            state.serialize_field("@type", "message")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of messages"]
     pub struct Messages {
         #[doc = "Approximate total count of messages found"]
@@ -1304,7 +2226,19 @@ pub mod types {
         #[doc = "List of messages; messages may be null"]
         pub messages: Option<Vec<Message>>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Messages {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Messages), 2usize + 1)?;
+            state.serialize_field(stringify!(total_count), &self.total_count)?;
+            state.serialize_field(stringify!(messages), &self.messages)?;
+            state.serialize_field("@type", "messages")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of messages found by a search"]
     pub struct FoundMessages {
         #[doc = "List of messages"]
@@ -1312,6 +2246,18 @@ pub mod types {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
         #[doc = "Value to pass as from_search_id to get more results"]
         pub next_from_search_id: i64,
+    }
+    impl Serialize for FoundMessages {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(FoundMessages), 2usize + 1)?;
+            state.serialize_field(stringify!(messages), &self.messages)?;
+            state.serialize_field(stringify!(next_from_search_id), &self.next_from_search_id)?;
+            state.serialize_field("@type", "foundMessages")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Notification settings applied to all private and secret chats when the corresponding chat setting has a default value"]
@@ -1331,7 +2277,7 @@ pub mod types {
         NotificationSettingsScopeGroupChats(NotificationSettingsScopeGroupChats),
         NotificationSettingsScopeChannelChats(NotificationSettingsScopeChannelChats),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about notification settings for a chat"]
     pub struct ChatNotificationSettings {
         #[doc = "If true, mute_for is ignored and the value for the relevant type of chat is used instead"]
@@ -1355,7 +2301,43 @@ pub mod types {
         #[doc = "If true, notifications for messages with mentions will be created as for an ordinary unread message"]
         pub disable_mention_notifications: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ChatNotificationSettings {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(ChatNotificationSettings), 10usize + 1)?;
+            state.serialize_field(stringify!(use_default_mute_for), &self.use_default_mute_for)?;
+            state.serialize_field(stringify!(mute_for), &self.mute_for)?;
+            state.serialize_field(stringify!(use_default_sound), &self.use_default_sound)?;
+            state.serialize_field(stringify!(sound), &self.sound)?;
+            state.serialize_field(
+                stringify!(use_default_show_preview),
+                &self.use_default_show_preview,
+            )?;
+            state.serialize_field(stringify!(show_preview), &self.show_preview)?;
+            state.serialize_field(
+                stringify!(use_default_disable_pinned_message_notifications),
+                &self.use_default_disable_pinned_message_notifications,
+            )?;
+            state.serialize_field(
+                stringify!(disable_pinned_message_notifications),
+                &self.disable_pinned_message_notifications,
+            )?;
+            state.serialize_field(
+                stringify!(use_default_disable_mention_notifications),
+                &self.use_default_disable_mention_notifications,
+            )?;
+            state.serialize_field(
+                stringify!(disable_mention_notifications),
+                &self.disable_mention_notifications,
+            )?;
+            state.serialize_field("@type", "chatNotificationSettings")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about notification settings for several chats"]
     pub struct ScopeNotificationSettings {
         #[doc = "Time left before notifications will be unmuted, in seconds"]
@@ -1369,13 +2351,47 @@ pub mod types {
         #[doc = "True, if notifications for messages with mentions will be created as for an ordinary unread message"]
         pub disable_mention_notifications: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ScopeNotificationSettings {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(ScopeNotificationSettings), 5usize + 1)?;
+            state.serialize_field(stringify!(mute_for), &self.mute_for)?;
+            state.serialize_field(stringify!(sound), &self.sound)?;
+            state.serialize_field(stringify!(show_preview), &self.show_preview)?;
+            state.serialize_field(
+                stringify!(disable_pinned_message_notifications),
+                &self.disable_pinned_message_notifications,
+            )?;
+            state.serialize_field(
+                stringify!(disable_mention_notifications),
+                &self.disable_mention_notifications,
+            )?;
+            state.serialize_field("@type", "scopeNotificationSettings")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a message draft"]
     pub struct DraftMessage {
         #[doc = "Identifier of the message to reply to; 0 if none"]
         pub reply_to_message_id: i64,
         #[doc = "Content of the message draft; this should always be of type inputMessageText"]
         pub input_message_text: InputMessageContent,
+    }
+    impl Serialize for DraftMessage {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(DraftMessage), 2usize + 1)?;
+            state.serialize_field(stringify!(reply_to_message_id), &self.reply_to_message_id)?;
+            state.serialize_field(stringify!(input_message_text), &self.input_message_text)?;
+            state.serialize_field("@type", "draftMessage")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "An ordinary chat with a user"]
@@ -1429,7 +2445,7 @@ pub mod types {
         ChatListMain(ChatListMain),
         ChatListArchive(ChatListArchive),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A chat. (Can be a private chat, basic group, supergroup, or secret chat)"]
     pub struct Chat {
         #[doc = "Chat unique identifier"]
@@ -1492,13 +2508,84 @@ pub mod types {
         #[doc = "Contains client-specific data associated with the chat. (For example, the chat position or local chat notification settings can be stored here.) Persistent if the message database is used"]
         pub client_data: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Chat {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Chat), 26usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field(stringify!(chat_list), &self.chat_list)?;
+            state.serialize_field(stringify!(title), &self.title)?;
+            state.serialize_field(stringify!(photo), &self.photo)?;
+            state.serialize_field(stringify!(permissions), &self.permissions)?;
+            state.serialize_field(stringify!(last_message), &self.last_message)?;
+            state.serialize_field(stringify!(order), &self.order)?;
+            state.serialize_field(stringify!(is_pinned), &self.is_pinned)?;
+            state.serialize_field(stringify!(is_marked_as_unread), &self.is_marked_as_unread)?;
+            state.serialize_field(stringify!(is_sponsored), &self.is_sponsored)?;
+            state.serialize_field(
+                stringify!(has_scheduled_messages),
+                &self.has_scheduled_messages,
+            )?;
+            state.serialize_field(
+                stringify!(can_be_deleted_only_for_self),
+                &self.can_be_deleted_only_for_self,
+            )?;
+            state.serialize_field(
+                stringify!(can_be_deleted_for_all_users),
+                &self.can_be_deleted_for_all_users,
+            )?;
+            state.serialize_field(stringify!(can_be_reported), &self.can_be_reported)?;
+            state.serialize_field(
+                stringify!(default_disable_notification),
+                &self.default_disable_notification,
+            )?;
+            state.serialize_field(stringify!(unread_count), &self.unread_count)?;
+            state.serialize_field(
+                stringify!(last_read_inbox_message_id),
+                &self.last_read_inbox_message_id,
+            )?;
+            state.serialize_field(
+                stringify!(last_read_outbox_message_id),
+                &self.last_read_outbox_message_id,
+            )?;
+            state.serialize_field(stringify!(unread_mention_count), &self.unread_mention_count)?;
+            state.serialize_field(
+                stringify!(notification_settings),
+                &self.notification_settings,
+            )?;
+            state.serialize_field(stringify!(action_bar), &self.action_bar)?;
+            state.serialize_field(stringify!(pinned_message_id), &self.pinned_message_id)?;
+            state.serialize_field(
+                stringify!(reply_markup_message_id),
+                &self.reply_markup_message_id,
+            )?;
+            state.serialize_field(stringify!(draft_message), &self.draft_message)?;
+            state.serialize_field(stringify!(client_data), &self.client_data)?;
+            state.serialize_field("@type", "chat")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a list of chats"]
     pub struct Chats {
         #[doc = "List of chat identifiers"]
         pub chat_ids: Vec<i64>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Chats {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Chats), 1usize + 1)?;
+            state.serialize_field(stringify!(chat_ids), &self.chat_ids)?;
+            state.serialize_field("@type", "chats")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a chat located nearby"]
     pub struct ChatNearby {
         #[doc = "Chat identifier"]
@@ -1506,7 +2593,19 @@ pub mod types {
         #[doc = "Distance to the chat location in meters"]
         pub distance: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ChatNearby {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(ChatNearby), 2usize + 1)?;
+            state.serialize_field(stringify!(chat_id), &self.chat_id)?;
+            state.serialize_field(stringify!(distance), &self.distance)?;
+            state.serialize_field("@type", "chatNearby")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a list of chats located nearby"]
     pub struct ChatsNearby {
         #[doc = "List of users nearby"]
@@ -1514,13 +2613,36 @@ pub mod types {
         #[doc = "List of location-based supergroups nearby"]
         pub supergroups_nearby: Vec<ChatNearby>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ChatsNearby {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(ChatsNearby), 2usize + 1)?;
+            state.serialize_field(stringify!(users_nearby), &self.users_nearby)?;
+            state.serialize_field(stringify!(supergroups_nearby), &self.supergroups_nearby)?;
+            state.serialize_field("@type", "chatsNearby")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a chat invite link"]
     pub struct ChatInviteLink {
         #[doc = "Chat invite link"]
         pub invite_link: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ChatInviteLink {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(ChatInviteLink), 1usize + 1)?;
+            state.serialize_field(stringify!(invite_link), &self.invite_link)?;
+            state.serialize_field("@type", "chatInviteLink")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a chat invite link"]
     pub struct ChatInviteLinkInfo {
         #[doc = "Chat identifier of the invite link; 0 if the user is not a member of this chat"]
@@ -1539,6 +2661,24 @@ pub mod types {
         pub member_user_ids: Vec<i32>,
         #[doc = "True, if the chat is a public supergroup or channel, i.e. it has a username or it is a location-based supergroup"]
         pub is_public: bool,
+    }
+    impl Serialize for ChatInviteLinkInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(ChatInviteLinkInfo), 7usize + 1)?;
+            state.serialize_field(stringify!(chat_id), &self.chat_id)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field(stringify!(title), &self.title)?;
+            state.serialize_field(stringify!(photo), &self.photo)?;
+            state.serialize_field(stringify!(member_count), &self.member_count)?;
+            state.serialize_field(stringify!(member_user_ids), &self.member_user_ids)?;
+            state.serialize_field(stringify!(is_public), &self.is_public)?;
+            state.serialize_field("@type", "chatInviteLinkInfo")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The chat is public, because it has username"]
@@ -1607,7 +2747,7 @@ pub mod types {
         KeyboardButtonTypeRequestLocation(KeyboardButtonTypeRequestLocation),
         KeyboardButtonTypeRequestPoll(KeyboardButtonTypeRequestPoll),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a single button in a bot keyboard"]
     pub struct KeyboardButton {
         #[doc = "Text of the button"]
@@ -1615,6 +2755,18 @@ pub mod types {
         #[serde(rename = "type")]
         #[doc = "Type of the button"]
         pub type_: KeyboardButtonType,
+    }
+    impl Serialize for KeyboardButton {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(KeyboardButton), 2usize + 1)?;
+            state.serialize_field(stringify!(text), &self.text)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field("@type", "keyboardButton")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A button that opens a specified URL"]
@@ -1664,7 +2816,7 @@ pub mod types {
         InlineKeyboardButtonTypeSwitchInline(InlineKeyboardButtonTypeSwitchInline),
         InlineKeyboardButtonTypeBuy(InlineKeyboardButtonTypeBuy),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a single button in an inline keyboard"]
     pub struct InlineKeyboardButton {
         #[doc = "Text of the button"]
@@ -1672,6 +2824,19 @@ pub mod types {
         #[serde(rename = "type")]
         #[doc = "Type of the button"]
         pub type_: InlineKeyboardButtonType,
+    }
+    impl Serialize for InlineKeyboardButton {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(InlineKeyboardButton), 2usize + 1)?;
+            state.serialize_field(stringify!(text), &self.text)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field("@type", "inlineKeyboardButton")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Instructs clients to remove the keyboard once this message has been received. This kind of keyboard can't be received in an incoming message; instead, UpdateChatReplyMarkup with message_id == 0 will be sent"]
@@ -1862,11 +3027,11 @@ pub mod types {
         RichTextSuperscript(RichTextSuperscript),
         RichTextMarked(RichTextMarked),
         RichTextPhoneNumber(RichTextPhoneNumber),
-        RichTextIcon(Box<RichTextIcon>),
+        RichTextIcon(RichTextIcon),
         RichTextAnchor(RichTextAnchor),
         RichTexts(RichTexts),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a caption of an instant view web page block, consisting of a text and a trailing credit"]
     pub struct PageBlockCaption {
         #[doc = "Content of the caption"]
@@ -1874,13 +3039,39 @@ pub mod types {
         #[doc = "Block credit (like HTML tag <cite>)"]
         pub credit: RichText,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PageBlockCaption {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PageBlockCaption), 2usize + 1)?;
+            state.serialize_field(stringify!(text), &self.text)?;
+            state.serialize_field(stringify!(credit), &self.credit)?;
+            state.serialize_field("@type", "pageBlockCaption")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes an item of a list page block"]
     pub struct PageBlockListItem {
         #[doc = "Item label"]
         pub label: String,
         #[doc = "Item blocks"]
         pub page_blocks: Vec<PageBlock>,
+    }
+    impl Serialize for PageBlockListItem {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PageBlockListItem), 2usize + 1)?;
+            state.serialize_field(stringify!(label), &self.label)?;
+            state.serialize_field(stringify!(page_blocks), &self.page_blocks)?;
+            state.serialize_field("@type", "pageBlockListItem")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The content should be left-aligned"]
@@ -1918,7 +3109,7 @@ pub mod types {
         PageBlockVerticalAlignmentMiddle(PageBlockVerticalAlignmentMiddle),
         PageBlockVerticalAlignmentBottom(PageBlockVerticalAlignmentBottom),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a cell of a table"]
     pub struct PageBlockTableCell {
         #[serde(default)]
@@ -1935,7 +3126,24 @@ pub mod types {
         #[doc = "Vertical cell content alignment"]
         pub valign: PageBlockVerticalAlignment,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PageBlockTableCell {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PageBlockTableCell), 6usize + 1)?;
+            state.serialize_field(stringify!(text), &self.text)?;
+            state.serialize_field(stringify!(is_header), &self.is_header)?;
+            state.serialize_field(stringify!(colspan), &self.colspan)?;
+            state.serialize_field(stringify!(rowspan), &self.rowspan)?;
+            state.serialize_field(stringify!(align), &self.align)?;
+            state.serialize_field(stringify!(valign), &self.valign)?;
+            state.serialize_field("@type", "pageBlockTableCell")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a related article"]
     pub struct PageBlockRelatedArticle {
         #[doc = "Related article URL"]
@@ -1951,6 +3159,23 @@ pub mod types {
         pub author: String,
         #[doc = "Point in time (Unix timestamp) when the article was published; 0 if unknown"]
         pub publish_date: i32,
+    }
+    impl Serialize for PageBlockRelatedArticle {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PageBlockRelatedArticle), 6usize + 1)?;
+            state.serialize_field(stringify!(url), &self.url)?;
+            state.serialize_field(stringify!(title), &self.title)?;
+            state.serialize_field(stringify!(description), &self.description)?;
+            state.serialize_field(stringify!(photo), &self.photo)?;
+            state.serialize_field(stringify!(author), &self.author)?;
+            state.serialize_field(stringify!(publish_date), &self.publish_date)?;
+            state.serialize_field("@type", "pageBlockRelatedArticle")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The title of a page"]
@@ -2244,7 +3469,7 @@ pub mod types {
         PageBlockRelatedArticles(PageBlockRelatedArticles),
         PageBlockMap(PageBlockMap),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes an instant view page for a web page"]
     pub struct WebPageInstantView {
         #[doc = "Content of the web page"]
@@ -2258,7 +3483,23 @@ pub mod types {
         #[doc = "True, if the instant view contains the full page. A network request might be needed to get the full web page instant view"]
         pub is_full: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for WebPageInstantView {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(WebPageInstantView), 5usize + 1)?;
+            state.serialize_field(stringify!(page_blocks), &self.page_blocks)?;
+            state.serialize_field(stringify!(version), &self.version)?;
+            state.serialize_field(stringify!(url), &self.url)?;
+            state.serialize_field(stringify!(is_rtl), &self.is_rtl)?;
+            state.serialize_field(stringify!(is_full), &self.is_full)?;
+            state.serialize_field("@type", "webPageInstantView")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a web page preview"]
     pub struct WebPage {
         #[doc = "Original URL of the link"]
@@ -2313,7 +3554,38 @@ pub mod types {
         #[doc = "Version of instant view, available for the web page (currently can be 1 or 2), 0 if none"]
         pub instant_view_version: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for WebPage {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(WebPage), 21usize + 1)?;
+            state.serialize_field(stringify!(url), &self.url)?;
+            state.serialize_field(stringify!(display_url), &self.display_url)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field(stringify!(site_name), &self.site_name)?;
+            state.serialize_field(stringify!(title), &self.title)?;
+            state.serialize_field(stringify!(description), &self.description)?;
+            state.serialize_field(stringify!(photo), &self.photo)?;
+            state.serialize_field(stringify!(embed_url), &self.embed_url)?;
+            state.serialize_field(stringify!(embed_type), &self.embed_type)?;
+            state.serialize_field(stringify!(embed_width), &self.embed_width)?;
+            state.serialize_field(stringify!(embed_height), &self.embed_height)?;
+            state.serialize_field(stringify!(duration), &self.duration)?;
+            state.serialize_field(stringify!(author), &self.author)?;
+            state.serialize_field(stringify!(animation), &self.animation)?;
+            state.serialize_field(stringify!(audio), &self.audio)?;
+            state.serialize_field(stringify!(document), &self.document)?;
+            state.serialize_field(stringify!(sticker), &self.sticker)?;
+            state.serialize_field(stringify!(video), &self.video)?;
+            state.serialize_field(stringify!(video_note), &self.video_note)?;
+            state.serialize_field(stringify!(voice_note), &self.voice_note)?;
+            state.serialize_field(stringify!(instant_view_version), &self.instant_view_version)?;
+            state.serialize_field("@type", "webPage")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes an address"]
     pub struct Address {
         #[doc = "A two-letter ISO 3166-1 alpha-2 country code"]
@@ -2329,7 +3601,23 @@ pub mod types {
         #[doc = "Address postal code"]
         pub postal_code: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Address {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Address), 6usize + 1)?;
+            state.serialize_field(stringify!(country_code), &self.country_code)?;
+            state.serialize_field(stringify!(state), &self.state)?;
+            state.serialize_field(stringify!(city), &self.city)?;
+            state.serialize_field(stringify!(street_line1), &self.street_line1)?;
+            state.serialize_field(stringify!(street_line2), &self.street_line2)?;
+            state.serialize_field(stringify!(postal_code), &self.postal_code)?;
+            state.serialize_field("@type", "address")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Portion of the price of a product (e.g., \"delivery cost\", \"tax amount\")"]
     pub struct LabeledPricePart {
         #[doc = "Label for this portion of the product price"]
@@ -2337,7 +3625,20 @@ pub mod types {
         #[doc = "Currency amount in minimal quantity of the currency"]
         pub amount: i64,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for LabeledPricePart {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(LabeledPricePart), 2usize + 1)?;
+            state.serialize_field(stringify!(label), &self.label)?;
+            state.serialize_field(stringify!(amount), &self.amount)?;
+            state.serialize_field("@type", "labeledPricePart")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Product invoice"]
     pub struct Invoice {
         #[doc = "ISO 4217 currency code"]
@@ -2361,7 +3662,36 @@ pub mod types {
         #[doc = "True, if the total price depends on the shipping method"]
         pub is_flexible: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Invoice {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Invoice), 10usize + 1)?;
+            state.serialize_field(stringify!(currency), &self.currency)?;
+            state.serialize_field(stringify!(price_parts), &self.price_parts)?;
+            state.serialize_field(stringify!(is_test), &self.is_test)?;
+            state.serialize_field(stringify!(need_name), &self.need_name)?;
+            state.serialize_field(stringify!(need_phone_number), &self.need_phone_number)?;
+            state.serialize_field(stringify!(need_email_address), &self.need_email_address)?;
+            state.serialize_field(
+                stringify!(need_shipping_address),
+                &self.need_shipping_address,
+            )?;
+            state.serialize_field(
+                stringify!(send_phone_number_to_provider),
+                &self.send_phone_number_to_provider,
+            )?;
+            state.serialize_field(
+                stringify!(send_email_address_to_provider),
+                &self.send_email_address_to_provider,
+            )?;
+            state.serialize_field(stringify!(is_flexible), &self.is_flexible)?;
+            state.serialize_field("@type", "invoice")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Order information"]
     pub struct OrderInfo {
         #[doc = "Name of the user"]
@@ -2374,7 +3704,21 @@ pub mod types {
         #[doc = "Shipping address for this order; may be null"]
         pub shipping_address: Option<Address>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for OrderInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(OrderInfo), 4usize + 1)?;
+            state.serialize_field(stringify!(name), &self.name)?;
+            state.serialize_field(stringify!(phone_number), &self.phone_number)?;
+            state.serialize_field(stringify!(email_address), &self.email_address)?;
+            state.serialize_field(stringify!(shipping_address), &self.shipping_address)?;
+            state.serialize_field("@type", "orderInfo")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "One shipping option"]
     pub struct ShippingOption {
         #[doc = "Shipping option identifier"]
@@ -2384,13 +3728,39 @@ pub mod types {
         #[doc = "A list of objects used to calculate the total shipping costs"]
         pub price_parts: Vec<LabeledPricePart>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ShippingOption {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(ShippingOption), 3usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(title), &self.title)?;
+            state.serialize_field(stringify!(price_parts), &self.price_parts)?;
+            state.serialize_field("@type", "shippingOption")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about saved card credentials"]
     pub struct SavedCredentials {
         #[doc = "Unique identifier of the saved credentials"]
         pub id: String,
         #[doc = "Title of the saved credentials"]
         pub title: String,
+    }
+    impl Serialize for SavedCredentials {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(SavedCredentials), 2usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(title), &self.title)?;
+            state.serialize_field("@type", "savedCredentials")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Applies if a user chooses some previously saved payment credentials. To use their previously saved credentials, the user must have a valid temporary password"]
@@ -2428,7 +3798,7 @@ pub mod types {
         InputCredentialsAndroidPay(InputCredentialsAndroidPay),
         InputCredentialsApplePay(InputCredentialsApplePay),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Stripe payment provider"]
     pub struct PaymentsProviderStripe {
         #[doc = "Stripe API publishable key"]
@@ -2440,7 +3810,22 @@ pub mod types {
         #[doc = "True, if the cardholder name must be provided"]
         pub need_cardholder_name: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PaymentsProviderStripe {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PaymentsProviderStripe), 4usize + 1)?;
+            state.serialize_field(stringify!(publishable_key), &self.publishable_key)?;
+            state.serialize_field(stringify!(need_country), &self.need_country)?;
+            state.serialize_field(stringify!(need_postal_code), &self.need_postal_code)?;
+            state.serialize_field(stringify!(need_cardholder_name), &self.need_cardholder_name)?;
+            state.serialize_field("@type", "paymentsProviderStripe")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about an invoice payment form"]
     pub struct PaymentForm {
         #[doc = "Full information of the invoice"]
@@ -2461,7 +3846,24 @@ pub mod types {
         #[doc = "True, if the user will be able to save credentials protected by a password they set up"]
         pub need_password: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PaymentForm {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(PaymentForm), 7usize + 1)?;
+            state.serialize_field(stringify!(invoice), &self.invoice)?;
+            state.serialize_field(stringify!(url), &self.url)?;
+            state.serialize_field(stringify!(payments_provider), &self.payments_provider)?;
+            state.serialize_field(stringify!(saved_order_info), &self.saved_order_info)?;
+            state.serialize_field(stringify!(saved_credentials), &self.saved_credentials)?;
+            state.serialize_field(stringify!(can_save_credentials), &self.can_save_credentials)?;
+            state.serialize_field(stringify!(need_password), &self.need_password)?;
+            state.serialize_field("@type", "paymentForm")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a temporary identifier of validated order information, which is stored for one hour. Also contains the available shipping options"]
     pub struct ValidatedOrderInfo {
         #[doc = "Temporary identifier of the order information"]
@@ -2469,7 +3871,20 @@ pub mod types {
         #[doc = "Available shipping options"]
         pub shipping_options: Vec<ShippingOption>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ValidatedOrderInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(ValidatedOrderInfo), 2usize + 1)?;
+            state.serialize_field(stringify!(order_info_id), &self.order_info_id)?;
+            state.serialize_field(stringify!(shipping_options), &self.shipping_options)?;
+            state.serialize_field("@type", "validatedOrderInfo")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains the result of a payment request"]
     pub struct PaymentResult {
         #[doc = "True, if the payment request was successful; otherwise the verification_url will be not empty"]
@@ -2477,7 +3892,19 @@ pub mod types {
         #[doc = "URL for additional payment credentials verification"]
         pub verification_url: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PaymentResult {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(PaymentResult), 2usize + 1)?;
+            state.serialize_field(stringify!(success), &self.success)?;
+            state.serialize_field(stringify!(verification_url), &self.verification_url)?;
+            state.serialize_field("@type", "paymentResult")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a successful payment"]
     pub struct PaymentReceipt {
         #[doc = "Point in time (Unix timestamp) when the payment was made"]
@@ -2495,13 +3922,44 @@ pub mod types {
         #[doc = "Title of the saved credentials"]
         pub credentials_title: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PaymentReceipt {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(PaymentReceipt), 6usize + 1)?;
+            state.serialize_field(stringify!(date), &self.date)?;
+            state.serialize_field(
+                stringify!(payments_provider_user_id),
+                &self.payments_provider_user_id,
+            )?;
+            state.serialize_field(stringify!(invoice), &self.invoice)?;
+            state.serialize_field(stringify!(order_info), &self.order_info)?;
+            state.serialize_field(stringify!(shipping_option), &self.shipping_option)?;
+            state.serialize_field(stringify!(credentials_title), &self.credentials_title)?;
+            state.serialize_field("@type", "paymentReceipt")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "File with the date it was uploaded"]
     pub struct DatedFile {
         #[doc = "The file"]
         pub file: File,
         #[doc = "Point in time (Unix timestamp) when the file was uploaded"]
         pub date: i32,
+    }
+    impl Serialize for DatedFile {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(DatedFile), 2usize + 1)?;
+            state.serialize_field(stringify!(file), &self.file)?;
+            state.serialize_field(stringify!(date), &self.date)?;
+            state.serialize_field("@type", "datedFile")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A Telegram Passport element containing the user's personal details"]
@@ -2561,7 +4019,7 @@ pub mod types {
         PassportElementTypePhoneNumber(PassportElementTypePhoneNumber),
         PassportElementTypeEmailAddress(PassportElementTypeEmailAddress),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a date according to the Gregorian calendar"]
     pub struct Date {
         #[doc = "Day of the month, 1-31"]
@@ -2571,7 +4029,20 @@ pub mod types {
         #[doc = "Year, 1-9999"]
         pub year: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Date {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Date), 3usize + 1)?;
+            state.serialize_field(stringify!(day), &self.day)?;
+            state.serialize_field(stringify!(month), &self.month)?;
+            state.serialize_field(stringify!(year), &self.year)?;
+            state.serialize_field("@type", "date")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains the user's personal details"]
     pub struct PersonalDetails {
         #[doc = "First name of the user written in English; 1-255 characters"]
@@ -2595,7 +4066,31 @@ pub mod types {
         #[doc = "A two-letter ISO 3166-1 alpha-2 country code of the user's residence country"]
         pub residence_country_code: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PersonalDetails {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PersonalDetails), 10usize + 1)?;
+            state.serialize_field(stringify!(first_name), &self.first_name)?;
+            state.serialize_field(stringify!(middle_name), &self.middle_name)?;
+            state.serialize_field(stringify!(last_name), &self.last_name)?;
+            state.serialize_field(stringify!(native_first_name), &self.native_first_name)?;
+            state.serialize_field(stringify!(native_middle_name), &self.native_middle_name)?;
+            state.serialize_field(stringify!(native_last_name), &self.native_last_name)?;
+            state.serialize_field(stringify!(birthdate), &self.birthdate)?;
+            state.serialize_field(stringify!(gender), &self.gender)?;
+            state.serialize_field(stringify!(country_code), &self.country_code)?;
+            state.serialize_field(
+                stringify!(residence_country_code),
+                &self.residence_country_code,
+            )?;
+            state.serialize_field("@type", "personalDetails")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "An identity document"]
     pub struct IdentityDocument {
         #[doc = "Document number; 1-24 characters"]
@@ -2613,7 +4108,24 @@ pub mod types {
         #[doc = "List of files containing a certified English translation of the document"]
         pub translation: Vec<DatedFile>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for IdentityDocument {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(IdentityDocument), 6usize + 1)?;
+            state.serialize_field(stringify!(number), &self.number)?;
+            state.serialize_field(stringify!(expiry_date), &self.expiry_date)?;
+            state.serialize_field(stringify!(front_side), &self.front_side)?;
+            state.serialize_field(stringify!(reverse_side), &self.reverse_side)?;
+            state.serialize_field(stringify!(selfie), &self.selfie)?;
+            state.serialize_field(stringify!(translation), &self.translation)?;
+            state.serialize_field("@type", "identityDocument")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "An identity document to be saved to Telegram Passport"]
     pub struct InputIdentityDocument {
         #[doc = "Document number; 1-24 characters"]
@@ -2629,7 +4141,24 @@ pub mod types {
         #[doc = "List of files containing a certified English translation of the document"]
         pub translation: Vec<InputFile>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for InputIdentityDocument {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(InputIdentityDocument), 6usize + 1)?;
+            state.serialize_field(stringify!(number), &self.number)?;
+            state.serialize_field(stringify!(expiry_date), &self.expiry_date)?;
+            state.serialize_field(stringify!(front_side), &self.front_side)?;
+            state.serialize_field(stringify!(reverse_side), &self.reverse_side)?;
+            state.serialize_field(stringify!(selfie), &self.selfie)?;
+            state.serialize_field(stringify!(translation), &self.translation)?;
+            state.serialize_field("@type", "inputIdentityDocument")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A personal document, containing some information about a user"]
     pub struct PersonalDocument {
         #[doc = "List of files containing the pages of the document"]
@@ -2637,13 +4166,39 @@ pub mod types {
         #[doc = "List of files containing a certified English translation of the document"]
         pub translation: Vec<DatedFile>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PersonalDocument {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PersonalDocument), 2usize + 1)?;
+            state.serialize_field(stringify!(files), &self.files)?;
+            state.serialize_field(stringify!(translation), &self.translation)?;
+            state.serialize_field("@type", "personalDocument")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A personal document to be saved to Telegram Passport"]
     pub struct InputPersonalDocument {
         #[doc = "List of files containing the pages of the document"]
         pub files: Vec<InputFile>,
         #[doc = "List of files containing a certified English translation of the document"]
         pub translation: Vec<InputFile>,
+    }
+    impl Serialize for InputPersonalDocument {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(InputPersonalDocument), 2usize + 1)?;
+            state.serialize_field(stringify!(files), &self.files)?;
+            state.serialize_field(stringify!(translation), &self.translation)?;
+            state.serialize_field("@type", "inputPersonalDocument")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A Telegram Passport element containing the user's personal details"]
@@ -2839,11 +4394,23 @@ pub mod types {
         InputPassportElementPhoneNumber(InputPassportElementPhoneNumber),
         InputPassportElementEmailAddress(InputPassportElementEmailAddress),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about saved Telegram Passport elements"]
     pub struct PassportElements {
         #[doc = "Telegram Passport elements"]
         pub elements: Vec<PassportElement>,
+    }
+    impl Serialize for PassportElements {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PassportElements), 1usize + 1)?;
+            state.serialize_field(stringify!(elements), &self.elements)?;
+            state.serialize_field("@type", "passportElements")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The element contains an error in an unspecified place. The error will be considered resolved when new data is added"]
@@ -2896,7 +4463,7 @@ pub mod types {
         PassportElementErrorSourceFile(PassportElementErrorSourceFile),
         PassportElementErrorSourceFiles(PassportElementErrorSourceFiles),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains the description of an error in a Telegram Passport element"]
     pub struct PassportElementError {
         #[serde(rename = "type")]
@@ -2907,7 +4474,21 @@ pub mod types {
         #[doc = "Error source"]
         pub source: PassportElementErrorSource,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PassportElementError {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PassportElementError), 3usize + 1)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field(stringify!(message), &self.message)?;
+            state.serialize_field(stringify!(source), &self.source)?;
+            state.serialize_field("@type", "passportElementError")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a Telegram Passport element that was requested by a service"]
     pub struct PassportSuitableElement {
         #[serde(rename = "type")]
@@ -2920,13 +4501,46 @@ pub mod types {
         #[doc = "True, if personal details must include the user's name in the language of their country of residence"]
         pub is_native_name_required: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PassportSuitableElement {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PassportSuitableElement), 4usize + 1)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field(stringify!(is_selfie_required), &self.is_selfie_required)?;
+            state.serialize_field(
+                stringify!(is_translation_required),
+                &self.is_translation_required,
+            )?;
+            state.serialize_field(
+                stringify!(is_native_name_required),
+                &self.is_native_name_required,
+            )?;
+            state.serialize_field("@type", "passportSuitableElement")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a description of the required Telegram Passport element that was requested by a service"]
     pub struct PassportRequiredElement {
         #[doc = "List of Telegram Passport elements any of which is enough to provide"]
         pub suitable_elements: Vec<PassportSuitableElement>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PassportRequiredElement {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PassportRequiredElement), 1usize + 1)?;
+            state.serialize_field(stringify!(suitable_elements), &self.suitable_elements)?;
+            state.serialize_field("@type", "passportRequiredElement")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a Telegram Passport authorization form that was requested"]
     pub struct PassportAuthorizationForm {
         #[doc = "Unique identifier of the authorization form"]
@@ -2936,7 +4550,21 @@ pub mod types {
         #[doc = "URL for the privacy policy of the service; may be empty"]
         pub privacy_policy_url: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PassportAuthorizationForm {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PassportAuthorizationForm), 3usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(required_elements), &self.required_elements)?;
+            state.serialize_field(stringify!(privacy_policy_url), &self.privacy_policy_url)?;
+            state.serialize_field("@type", "passportAuthorizationForm")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a Telegram Passport elements and corresponding errors"]
     pub struct PassportElementsWithErrors {
         #[doc = "Telegram Passport elements"]
@@ -2944,7 +4572,20 @@ pub mod types {
         #[doc = "Errors in the elements that are already available"]
         pub errors: Vec<PassportElementError>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PassportElementsWithErrors {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PassportElementsWithErrors), 2usize + 1)?;
+            state.serialize_field(stringify!(elements), &self.elements)?;
+            state.serialize_field(stringify!(errors), &self.errors)?;
+            state.serialize_field("@type", "passportElementsWithErrors")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains encrypted Telegram Passport data credentials"]
     pub struct EncryptedCredentials {
         #[doc = "The encrypted credentials"]
@@ -2954,7 +4595,21 @@ pub mod types {
         #[doc = "Secret for data decryption, encrypted with the service's public key"]
         pub secret: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for EncryptedCredentials {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(EncryptedCredentials), 3usize + 1)?;
+            state.serialize_field(stringify!(data), &self.data)?;
+            state.serialize_field(stringify!(hash), &self.hash)?;
+            state.serialize_field(stringify!(secret), &self.secret)?;
+            state.serialize_field("@type", "encryptedCredentials")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about an encrypted Telegram Passport element; for bots only"]
     pub struct EncryptedPassportElement {
         #[serde(rename = "type")]
@@ -2978,6 +4633,26 @@ pub mod types {
         pub value: String,
         #[doc = "Hash of the entire element"]
         pub hash: String,
+    }
+    impl Serialize for EncryptedPassportElement {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(EncryptedPassportElement), 9usize + 1)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field(stringify!(data), &self.data)?;
+            state.serialize_field(stringify!(front_side), &self.front_side)?;
+            state.serialize_field(stringify!(reverse_side), &self.reverse_side)?;
+            state.serialize_field(stringify!(selfie), &self.selfie)?;
+            state.serialize_field(stringify!(translation), &self.translation)?;
+            state.serialize_field(stringify!(files), &self.files)?;
+            state.serialize_field(stringify!(value), &self.value)?;
+            state.serialize_field(stringify!(hash), &self.hash)?;
+            state.serialize_field("@type", "encryptedPassportElement")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The element contains an error in an unspecified place. The error will be considered resolved when new data is added"]
@@ -3054,7 +4729,7 @@ pub mod types {
         InputPassportElementErrorSourceFile(InputPassportElementErrorSourceFile),
         InputPassportElementErrorSourceFiles(InputPassportElementErrorSourceFiles),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains the description of an error in a Telegram Passport element; for bots only"]
     pub struct InputPassportElementError {
         #[serde(rename = "type")]
@@ -3064,6 +4739,20 @@ pub mod types {
         pub message: String,
         #[doc = "Error source"]
         pub source: InputPassportElementErrorSource,
+    }
+    impl Serialize for InputPassportElementError {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(InputPassportElementError), 3usize + 1)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field(stringify!(message), &self.message)?;
+            state.serialize_field(stringify!(source), &self.source)?;
+            state.serialize_field("@type", "inputPassportElementError")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A text message"]
@@ -3489,7 +5178,7 @@ pub mod types {
         TextEntityTypeTextUrl(TextEntityTypeTextUrl),
         TextEntityTypeMentionName(TextEntityTypeMentionName),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A thumbnail to be sent along with a file; should be in JPEG or WEBP format for stickers, and less than 200 kB in size"]
     pub struct InputThumbnail {
         #[doc = "Thumbnail file to send. Sending thumbnails by file_id is currently not supported"]
@@ -3498,6 +5187,19 @@ pub mod types {
         pub width: i32,
         #[doc = "Thumbnail height, usually shouldn't exceed 320. Use 0 if unknown"]
         pub height: i32,
+    }
+    impl Serialize for InputThumbnail {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(InputThumbnail), 3usize + 1)?;
+            state.serialize_field(stringify!(thumbnail), &self.thumbnail)?;
+            state.serialize_field(stringify!(width), &self.width)?;
+            state.serialize_field(stringify!(height), &self.height)?;
+            state.serialize_field("@type", "inputThumbnail")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The message will be sent at the specified date"]
@@ -3516,7 +5218,7 @@ pub mod types {
         MessageSchedulingStateSendAtDate(MessageSchedulingStateSendAtDate),
         MessageSchedulingStateSendWhenOnline(MessageSchedulingStateSendWhenOnline),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Options to be used when a message is send"]
     pub struct SendMessageOptions {
         #[doc = "Pass true to disable notification for the message. Must be false if the message is sent to a secret chat"]
@@ -3525,6 +5227,20 @@ pub mod types {
         pub from_background: bool,
         #[doc = "Message scheduling state. Messages sent to a secret chat, live location messages and self-destructing messages can't be scheduled"]
         pub scheduling_state: MessageSchedulingState,
+    }
+    impl Serialize for SendMessageOptions {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(SendMessageOptions), 3usize + 1)?;
+            state.serialize_field(stringify!(disable_notification), &self.disable_notification)?;
+            state.serialize_field(stringify!(from_background), &self.from_background)?;
+            state.serialize_field(stringify!(scheduling_state), &self.scheduling_state)?;
+            state.serialize_field("@type", "sendMessageOptions")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A text message"]
@@ -3939,19 +5655,41 @@ pub mod types {
         UserStatusLastWeek(UserStatusLastWeek),
         UserStatusLastMonth(UserStatusLastMonth),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a list of stickers"]
     pub struct Stickers {
         #[doc = "List of stickers"]
         pub stickers: Vec<Sticker>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Stickers {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Stickers), 1usize + 1)?;
+            state.serialize_field(stringify!(stickers), &self.stickers)?;
+            state.serialize_field("@type", "stickers")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a list of emoji"]
     pub struct Emojis {
         #[doc = "List of emojis"]
         pub emojis: Vec<String>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Emojis {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Emojis), 1usize + 1)?;
+            state.serialize_field(stringify!(emojis), &self.emojis)?;
+            state.serialize_field("@type", "emojis")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a sticker set"]
     pub struct StickerSet {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -3981,7 +5719,29 @@ pub mod types {
         #[doc = "A list of emoji corresponding to the stickers in the same order. The list is only for informational purposes, because a sticker is always sent with a fixed emoji from the corresponding Sticker object"]
         pub emojis: Vec<Emojis>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for StickerSet {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(StickerSet), 12usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(title), &self.title)?;
+            state.serialize_field(stringify!(name), &self.name)?;
+            state.serialize_field(stringify!(thumbnail), &self.thumbnail)?;
+            state.serialize_field(stringify!(is_installed), &self.is_installed)?;
+            state.serialize_field(stringify!(is_archived), &self.is_archived)?;
+            state.serialize_field(stringify!(is_official), &self.is_official)?;
+            state.serialize_field(stringify!(is_animated), &self.is_animated)?;
+            state.serialize_field(stringify!(is_masks), &self.is_masks)?;
+            state.serialize_field(stringify!(is_viewed), &self.is_viewed)?;
+            state.serialize_field(stringify!(stickers), &self.stickers)?;
+            state.serialize_field(stringify!(emojis), &self.emojis)?;
+            state.serialize_field("@type", "stickerSet")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents short information about a sticker set"]
     pub struct StickerSetInfo {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -4011,13 +5771,47 @@ pub mod types {
         #[doc = "Contains up to the first 5 stickers from the set, depending on the context. If the client needs more stickers the full set should be requested"]
         pub covers: Vec<Sticker>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for StickerSetInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(StickerSetInfo), 12usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(title), &self.title)?;
+            state.serialize_field(stringify!(name), &self.name)?;
+            state.serialize_field(stringify!(thumbnail), &self.thumbnail)?;
+            state.serialize_field(stringify!(is_installed), &self.is_installed)?;
+            state.serialize_field(stringify!(is_archived), &self.is_archived)?;
+            state.serialize_field(stringify!(is_official), &self.is_official)?;
+            state.serialize_field(stringify!(is_animated), &self.is_animated)?;
+            state.serialize_field(stringify!(is_masks), &self.is_masks)?;
+            state.serialize_field(stringify!(is_viewed), &self.is_viewed)?;
+            state.serialize_field(stringify!(size), &self.size)?;
+            state.serialize_field(stringify!(covers), &self.covers)?;
+            state.serialize_field("@type", "stickerSetInfo")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a list of sticker sets"]
     pub struct StickerSets {
         #[doc = "Approximate total number of sticker sets found"]
         pub total_count: i32,
         #[doc = "List of sticker sets"]
         pub sets: Vec<StickerSetInfo>,
+    }
+    impl Serialize for StickerSets {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(StickerSets), 2usize + 1)?;
+            state.serialize_field(stringify!(total_count), &self.total_count)?;
+            state.serialize_field(stringify!(sets), &self.sets)?;
+            state.serialize_field("@type", "stickerSets")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The call wasn't discarded, or the reason is unknown"]
@@ -4045,7 +5839,7 @@ pub mod types {
         CallDiscardReasonDisconnected(CallDiscardReasonDisconnected),
         CallDiscardReasonHungUp(CallDiscardReasonHungUp),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Specifies the supported call protocols"]
     pub struct CallProtocol {
         #[doc = "True, if UDP peer-to-peer connections are supported"]
@@ -4057,7 +5851,21 @@ pub mod types {
         #[doc = "The maximum supported API layer; use 65"]
         pub max_layer: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for CallProtocol {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(CallProtocol), 4usize + 1)?;
+            state.serialize_field(stringify!(udp_p2p), &self.udp_p2p)?;
+            state.serialize_field(stringify!(udp_reflector), &self.udp_reflector)?;
+            state.serialize_field(stringify!(min_layer), &self.min_layer)?;
+            state.serialize_field(stringify!(max_layer), &self.max_layer)?;
+            state.serialize_field("@type", "callProtocol")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes the address of UDP reflectors"]
     pub struct CallConnection {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -4072,11 +5880,37 @@ pub mod types {
         #[doc = "Connection peer tag"]
         pub peer_tag: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for CallConnection {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(CallConnection), 5usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(ip), &self.ip)?;
+            state.serialize_field(stringify!(ipv6), &self.ipv6)?;
+            state.serialize_field(stringify!(port), &self.port)?;
+            state.serialize_field(stringify!(peer_tag), &self.peer_tag)?;
+            state.serialize_field("@type", "callConnection")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains the call identifier"]
     pub struct CallId {
         #[doc = "Call identifier"]
         pub id: i32,
+    }
+    impl Serialize for CallId {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(CallId), 1usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field("@type", "callId")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The call is pending, waiting to be accepted by a user"]
@@ -4170,7 +6004,7 @@ pub mod types {
         CallProblemSilentRemote(CallProblemSilentRemote),
         CallProblemDropped(CallProblemDropped),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a call"]
     pub struct Call {
         #[doc = "Call identifier, not persistent"]
@@ -4182,7 +6016,21 @@ pub mod types {
         #[doc = "Call state"]
         pub state: CallState,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Call {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Call), 4usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(user_id), &self.user_id)?;
+            state.serialize_field(stringify!(is_outgoing), &self.is_outgoing)?;
+            state.serialize_field(stringify!(state), &self.state)?;
+            state.serialize_field("@type", "call")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains settings for the authentication of the user's phone number"]
     pub struct PhoneNumberAuthenticationSettings {
         #[doc = "Pass true if the authentication code may be sent via flash call to the specified phone number"]
@@ -4192,13 +6040,44 @@ pub mod types {
         #[doc = "For official applications only. True, if the app can use Android SMS Retriever API (requires Google Play Services >= 10.2) to automatically receive the authentication code from the SMS. See https://developers.google.com/identity/sms-retriever/ for more details"]
         pub allow_sms_retriever_api: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PhoneNumberAuthenticationSettings {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer
+                .serialize_struct(stringify!(PhoneNumberAuthenticationSettings), 3usize + 1)?;
+            state.serialize_field(stringify!(allow_flash_call), &self.allow_flash_call)?;
+            state.serialize_field(
+                stringify!(is_current_phone_number),
+                &self.is_current_phone_number,
+            )?;
+            state.serialize_field(
+                stringify!(allow_sms_retriever_api),
+                &self.allow_sms_retriever_api,
+            )?;
+            state.serialize_field("@type", "phoneNumberAuthenticationSettings")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a list of animations"]
     pub struct Animations {
         #[doc = "List of animations"]
         pub animations: Vec<Animation>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Animations {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Animations), 1usize + 1)?;
+            state.serialize_field(stringify!(animations), &self.animations)?;
+            state.serialize_field("@type", "animations")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents the result of an ImportContacts request"]
     pub struct ImportedContacts {
         #[doc = "User identifiers of the imported contacts in the same order as they were specified in the request; 0 if the contact is not yet a registered user"]
@@ -4206,11 +6085,35 @@ pub mod types {
         #[doc = "The number of users that imported the corresponding contact; 0 for already registered users or if unavailable"]
         pub importer_count: Vec<i32>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ImportedContacts {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(ImportedContacts), 2usize + 1)?;
+            state.serialize_field(stringify!(user_ids), &self.user_ids)?;
+            state.serialize_field(stringify!(importer_count), &self.importer_count)?;
+            state.serialize_field("@type", "importedContacts")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains an HTTP URL"]
     pub struct HttpUrl {
         #[doc = "The URL"]
         pub url: String,
+    }
+    impl Serialize for HttpUrl {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(HttpUrl), 1usize + 1)?;
+            state.serialize_field(stringify!(url), &self.url)?;
+            state.serialize_field("@type", "httpUrl")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a link to an animated GIF"]
@@ -4645,7 +6548,7 @@ pub mod types {
         InlineQueryResultContact(InlineQueryResultContact),
         InlineQueryResultLocation(InlineQueryResultLocation),
         InlineQueryResultVenue(InlineQueryResultVenue),
-        InlineQueryResultGame(Box<InlineQueryResultGame>),
+        InlineQueryResultGame(InlineQueryResultGame),
         InlineQueryResultAnimation(InlineQueryResultAnimation),
         InlineQueryResultAudio(InlineQueryResultAudio),
         InlineQueryResultDocument(InlineQueryResultDocument),
@@ -4654,7 +6557,7 @@ pub mod types {
         InlineQueryResultVideo(InlineQueryResultVideo),
         InlineQueryResultVoiceNote(InlineQueryResultVoiceNote),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents the results of the inline query. Use sendInlineQueryResultMessage to send the result of the query"]
     pub struct InlineQueryResults {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -4668,6 +6571,22 @@ pub mod types {
         pub switch_pm_text: String,
         #[doc = "Parameter for the bot start message"]
         pub switch_pm_parameter: String,
+    }
+    impl Serialize for InlineQueryResults {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(InlineQueryResults), 5usize + 1)?;
+            state.serialize_field(stringify!(inline_query_id), &self.inline_query_id)?;
+            state.serialize_field(stringify!(next_offset), &self.next_offset)?;
+            state.serialize_field(stringify!(results), &self.results)?;
+            state.serialize_field(stringify!(switch_pm_text), &self.switch_pm_text)?;
+            state.serialize_field(stringify!(switch_pm_parameter), &self.switch_pm_parameter)?;
+            state.serialize_field("@type", "inlineQueryResults")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The payload from a general callback button"]
@@ -4689,7 +6608,7 @@ pub mod types {
         CallbackQueryPayloadData(CallbackQueryPayloadData),
         CallbackQueryPayloadGame(CallbackQueryPayloadGame),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a bot's answer to a callback query"]
     pub struct CallbackQueryAnswer {
         #[doc = "Text of the answer"]
@@ -4699,13 +6618,39 @@ pub mod types {
         #[doc = "URL to be opened"]
         pub url: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for CallbackQueryAnswer {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(CallbackQueryAnswer), 3usize + 1)?;
+            state.serialize_field(stringify!(text), &self.text)?;
+            state.serialize_field(stringify!(show_alert), &self.show_alert)?;
+            state.serialize_field(stringify!(url), &self.url)?;
+            state.serialize_field("@type", "callbackQueryAnswer")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains the result of a custom request"]
     pub struct CustomRequestResult {
         #[doc = "A JSON-serialized result"]
         pub result: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for CustomRequestResult {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(CustomRequestResult), 1usize + 1)?;
+            state.serialize_field(stringify!(result), &self.result)?;
+            state.serialize_field("@type", "customRequestResult")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains one row of the game high score table"]
     pub struct GameHighScore {
         #[doc = "Position in the high score table"]
@@ -4715,11 +6660,35 @@ pub mod types {
         #[doc = "User score"]
         pub score: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for GameHighScore {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(GameHighScore), 3usize + 1)?;
+            state.serialize_field(stringify!(position), &self.position)?;
+            state.serialize_field(stringify!(user_id), &self.user_id)?;
+            state.serialize_field(stringify!(score), &self.score)?;
+            state.serialize_field("@type", "gameHighScore")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of game high scores"]
     pub struct GameHighScores {
         #[doc = "A list of game high scores"]
         pub scores: Vec<GameHighScore>,
+    }
+    impl Serialize for GameHighScores {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(GameHighScores), 1usize + 1)?;
+            state.serialize_field(stringify!(scores), &self.scores)?;
+            state.serialize_field("@type", "gameHighScores")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A message was edited"]
@@ -4908,7 +6877,7 @@ pub mod types {
         ChatEventLocationChanged(ChatEventLocationChanged),
         ChatEventIsAllHistoryAvailableToggled(ChatEventIsAllHistoryAvailableToggled),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a chat event"]
     pub struct ChatEvent {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -4921,13 +6890,38 @@ pub mod types {
         #[doc = "Action performed by the user"]
         pub action: ChatEventAction,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ChatEvent {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(ChatEvent), 4usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(date), &self.date)?;
+            state.serialize_field(stringify!(user_id), &self.user_id)?;
+            state.serialize_field(stringify!(action), &self.action)?;
+            state.serialize_field("@type", "chatEvent")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of chat events"]
     pub struct ChatEvents {
         #[doc = "List of events"]
         pub events: Vec<ChatEvent>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ChatEvents {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(ChatEvents), 1usize + 1)?;
+            state.serialize_field(stringify!(events), &self.events)?;
+            state.serialize_field("@type", "chatEvents")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a set of filters used to obtain a chat event log"]
     pub struct ChatEventLogFilters {
         #[doc = "True, if message edits should be returned"]
@@ -4950,6 +6944,27 @@ pub mod types {
         pub info_changes: bool,
         #[doc = "True, if changes in chat settings should be returned"]
         pub setting_changes: bool,
+    }
+    impl Serialize for ChatEventLogFilters {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(ChatEventLogFilters), 10usize + 1)?;
+            state.serialize_field(stringify!(message_edits), &self.message_edits)?;
+            state.serialize_field(stringify!(message_deletions), &self.message_deletions)?;
+            state.serialize_field(stringify!(message_pins), &self.message_pins)?;
+            state.serialize_field(stringify!(member_joins), &self.member_joins)?;
+            state.serialize_field(stringify!(member_leaves), &self.member_leaves)?;
+            state.serialize_field(stringify!(member_invites), &self.member_invites)?;
+            state.serialize_field(stringify!(member_promotions), &self.member_promotions)?;
+            state.serialize_field(stringify!(member_restrictions), &self.member_restrictions)?;
+            state.serialize_field(stringify!(info_changes), &self.info_changes)?;
+            state.serialize_field(stringify!(setting_changes), &self.setting_changes)?;
+            state.serialize_field("@type", "chatEventLogFilters")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "An ordinary language pack string"]
@@ -4985,7 +7000,7 @@ pub mod types {
         LanguagePackStringValuePluralized(LanguagePackStringValuePluralized),
         LanguagePackStringValueDeleted(LanguagePackStringValueDeleted),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents one language pack string"]
     pub struct LanguagePackString {
         #[doc = "String key"]
@@ -4993,13 +7008,38 @@ pub mod types {
         #[doc = "String value"]
         pub value: LanguagePackStringValue,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for LanguagePackString {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(LanguagePackString), 2usize + 1)?;
+            state.serialize_field(stringify!(key), &self.key)?;
+            state.serialize_field(stringify!(value), &self.value)?;
+            state.serialize_field("@type", "languagePackString")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of language pack strings"]
     pub struct LanguagePackStrings {
         #[doc = "A list of language pack strings"]
         pub strings: Vec<LanguagePackString>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for LanguagePackStrings {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(LanguagePackStrings), 1usize + 1)?;
+            state.serialize_field(stringify!(strings), &self.strings)?;
+            state.serialize_field("@type", "languagePackStrings")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a language pack"]
     pub struct LanguagePackInfo {
         #[doc = "Unique language pack identifier"]
@@ -5029,11 +7069,53 @@ pub mod types {
         #[doc = "Link to language translation interface; empty for custom local language packs"]
         pub translation_url: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for LanguagePackInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(LanguagePackInfo), 13usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(
+                stringify!(base_language_pack_id),
+                &self.base_language_pack_id,
+            )?;
+            state.serialize_field(stringify!(name), &self.name)?;
+            state.serialize_field(stringify!(native_name), &self.native_name)?;
+            state.serialize_field(stringify!(plural_code), &self.plural_code)?;
+            state.serialize_field(stringify!(is_official), &self.is_official)?;
+            state.serialize_field(stringify!(is_rtl), &self.is_rtl)?;
+            state.serialize_field(stringify!(is_beta), &self.is_beta)?;
+            state.serialize_field(stringify!(is_installed), &self.is_installed)?;
+            state.serialize_field(stringify!(total_string_count), &self.total_string_count)?;
+            state.serialize_field(
+                stringify!(translated_string_count),
+                &self.translated_string_count,
+            )?;
+            state.serialize_field(stringify!(local_string_count), &self.local_string_count)?;
+            state.serialize_field(stringify!(translation_url), &self.translation_url)?;
+            state.serialize_field("@type", "languagePackInfo")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about the current localization target"]
     pub struct LocalizationTargetInfo {
         #[doc = "List of available language packs for this application"]
         pub language_packs: Vec<LanguagePackInfo>,
+    }
+    impl Serialize for LocalizationTargetInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(LocalizationTargetInfo), 1usize + 1)?;
+            state.serialize_field(stringify!(language_packs), &self.language_packs)?;
+            state.serialize_field("@type", "localizationTargetInfo")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A token for Firebase Cloud Messaging"]
@@ -5130,12 +7212,23 @@ pub mod types {
         DeviceTokenBlackBerryPush(DeviceTokenBlackBerryPush),
         DeviceTokenTizenPush(DeviceTokenTizenPush),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a globally unique push receiver identifier, which can be used to identify which account has received a push notification"]
     pub struct PushReceiverId {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
         #[doc = "The globally unique identifier of push notification subscription"]
         pub id: i64,
+    }
+    impl Serialize for PushReceiverId {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(PushReceiverId), 1usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field("@type", "pushReceiverId")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a solid fill of a background"]
@@ -5194,7 +7287,7 @@ pub mod types {
         BackgroundTypePattern(BackgroundTypePattern),
         BackgroundTypeFill(BackgroundTypeFill),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a chat background"]
     pub struct Background {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -5213,11 +7306,38 @@ pub mod types {
         #[doc = "Type of the background"]
         pub type_: BackgroundType,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Background {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Background), 6usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(is_default), &self.is_default)?;
+            state.serialize_field(stringify!(is_dark), &self.is_dark)?;
+            state.serialize_field(stringify!(name), &self.name)?;
+            state.serialize_field(stringify!(document), &self.document)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field("@type", "background")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of backgrounds"]
     pub struct Backgrounds {
         #[doc = "A list of backgrounds"]
         pub backgrounds: Vec<Background>,
+    }
+    impl Serialize for Backgrounds {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Backgrounds), 1usize + 1)?;
+            state.serialize_field(stringify!(backgrounds), &self.backgrounds)?;
+            state.serialize_field("@type", "backgrounds")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A background from a local file"]
@@ -5240,11 +7360,22 @@ pub mod types {
         InputBackgroundLocal(InputBackgroundLocal),
         InputBackgroundRemote(InputBackgroundRemote),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of hashtags"]
     pub struct Hashtags {
         #[doc = "A list of hashtags"]
         pub hashtags: Vec<String>,
+    }
+    impl Serialize for Hashtags {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Hashtags), 1usize + 1)?;
+            state.serialize_field(stringify!(hashtags), &self.hashtags)?;
+            state.serialize_field("@type", "hashtags")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The session can be used"]
@@ -5598,7 +7729,7 @@ pub mod types {
         NotificationGroupTypeSecretChat(NotificationGroupTypeSecretChat),
         NotificationGroupTypeCalls(NotificationGroupTypeCalls),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a notification"]
     pub struct Notification {
         #[doc = "Unique persistent identifier of this notification"]
@@ -5611,7 +7742,21 @@ pub mod types {
         #[doc = "Notification type"]
         pub type_: NotificationType,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Notification {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Notification), 4usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(date), &self.date)?;
+            state.serialize_field(stringify!(is_silent), &self.is_silent)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field("@type", "notification")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a group of notifications"]
     pub struct NotificationGroup {
         #[doc = "Unique persistent auto-incremented from 1 identifier of the notification group"]
@@ -5625,6 +7770,22 @@ pub mod types {
         pub total_count: i32,
         #[doc = "The list of active notifications"]
         pub notifications: Vec<Notification>,
+    }
+    impl Serialize for NotificationGroup {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(NotificationGroup), 5usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field(stringify!(chat_id), &self.chat_id)?;
+            state.serialize_field(stringify!(total_count), &self.total_count)?;
+            state.serialize_field(stringify!(notifications), &self.notifications)?;
+            state.serialize_field("@type", "notificationGroup")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a boolean option"]
@@ -5657,13 +7818,26 @@ pub mod types {
         OptionValueInteger(OptionValueInteger),
         OptionValueString(OptionValueString),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents one member of a JSON object"]
     pub struct JsonObjectMember {
         #[doc = "Member's key"]
         pub key: String,
         #[doc = "Member's value"]
         pub value: JsonValue,
+    }
+    impl Serialize for JsonObjectMember {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(JsonObjectMember), 2usize + 1)?;
+            state.serialize_field(stringify!(key), &self.key)?;
+            state.serialize_field(stringify!(value), &self.value)?;
+            state.serialize_field("@type", "jsonObjectMember")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a null JSON value"]
@@ -5760,11 +7934,23 @@ pub mod types {
         UserPrivacySettingRuleRestrictUsers(UserPrivacySettingRuleRestrictUsers),
         UserPrivacySettingRuleRestrictChatMembers(UserPrivacySettingRuleRestrictChatMembers),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A list of privacy rules. Rules are matched in the specified order. The first matched rule defines the privacy setting for a given user. If no rule matches, the action is not allowed"]
     pub struct UserPrivacySettingRules {
         #[doc = "A list of rules"]
         pub rules: Vec<UserPrivacySettingRule>,
+    }
+    impl Serialize for UserPrivacySettingRules {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(UserPrivacySettingRules), 1usize + 1)?;
+            state.serialize_field(stringify!(rules), &self.rules)?;
+            state.serialize_field("@type", "userPrivacySettingRules")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A privacy setting for managing whether the user's online status is visible"]
@@ -5806,13 +7992,24 @@ pub mod types {
         UserPrivacySettingAllowPeerToPeerCalls(UserPrivacySettingAllowPeerToPeerCalls),
         UserPrivacySettingAllowFindingByPhoneNumber(UserPrivacySettingAllowFindingByPhoneNumber),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about the period of inactivity after which the current user's account will automatically be deleted"]
     pub struct AccountTtl {
         #[doc = "Number of days of inactivity before the account will be flagged for deletion; should range from 30-366 days"]
         pub days: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for AccountTtl {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(AccountTtl), 1usize + 1)?;
+            state.serialize_field(stringify!(days), &self.days)?;
+            state.serialize_field("@type", "accountTtl")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about one session in a Telegram application used by the current user. Sessions should be shown to the user in the returned order"]
     pub struct Session {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -5847,13 +8044,52 @@ pub mod types {
         #[doc = "Region code from which the session was created, based on the IP address"]
         pub region: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Session {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Session), 15usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(is_current), &self.is_current)?;
+            state.serialize_field(stringify!(is_password_pending), &self.is_password_pending)?;
+            state.serialize_field(stringify!(api_id), &self.api_id)?;
+            state.serialize_field(stringify!(application_name), &self.application_name)?;
+            state.serialize_field(stringify!(application_version), &self.application_version)?;
+            state.serialize_field(
+                stringify!(is_official_application),
+                &self.is_official_application,
+            )?;
+            state.serialize_field(stringify!(device_model), &self.device_model)?;
+            state.serialize_field(stringify!(platform), &self.platform)?;
+            state.serialize_field(stringify!(system_version), &self.system_version)?;
+            state.serialize_field(stringify!(log_in_date), &self.log_in_date)?;
+            state.serialize_field(stringify!(last_active_date), &self.last_active_date)?;
+            state.serialize_field(stringify!(ip), &self.ip)?;
+            state.serialize_field(stringify!(country), &self.country)?;
+            state.serialize_field(stringify!(region), &self.region)?;
+            state.serialize_field("@type", "session")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of sessions"]
     pub struct Sessions {
         #[doc = "List of sessions"]
         pub sessions: Vec<Session>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Sessions {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Sessions), 1usize + 1)?;
+            state.serialize_field(stringify!(sessions), &self.sessions)?;
+            state.serialize_field("@type", "sessions")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about one website the current user is logged in with Telegram"]
     pub struct ConnectedWebsite {
         #[serde(deserialize_with = "super::utils::from_str_to_t")]
@@ -5876,11 +8112,43 @@ pub mod types {
         #[doc = "Human-readable description of a country and a region, from which the user was logged in, based on the IP address"]
         pub location: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for ConnectedWebsite {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(ConnectedWebsite), 9usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(domain_name), &self.domain_name)?;
+            state.serialize_field(stringify!(bot_user_id), &self.bot_user_id)?;
+            state.serialize_field(stringify!(browser), &self.browser)?;
+            state.serialize_field(stringify!(platform), &self.platform)?;
+            state.serialize_field(stringify!(log_in_date), &self.log_in_date)?;
+            state.serialize_field(stringify!(last_active_date), &self.last_active_date)?;
+            state.serialize_field(stringify!(ip), &self.ip)?;
+            state.serialize_field(stringify!(location), &self.location)?;
+            state.serialize_field("@type", "connectedWebsite")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of websites the current user is logged in with Telegram"]
     pub struct ConnectedWebsites {
         #[doc = "List of connected websites"]
         pub websites: Vec<ConnectedWebsite>,
+    }
+    impl Serialize for ConnectedWebsites {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(ConnectedWebsites), 1usize + 1)?;
+            state.serialize_field(stringify!(websites), &self.websites)?;
+            state.serialize_field("@type", "connectedWebsites")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The chat contains spam messages"]
@@ -5919,7 +8187,7 @@ pub mod types {
         ChatReportReasonUnrelatedLocation(ChatReportReasonUnrelatedLocation),
         ChatReportReasonCustom(ChatReportReasonCustom),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a public HTTPS link to a message in a supergroup or channel with a username"]
     pub struct PublicMessageLink {
         #[doc = "Message link"]
@@ -5927,7 +8195,20 @@ pub mod types {
         #[doc = "HTML-code for embedding the message"]
         pub html: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for PublicMessageLink {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(PublicMessageLink), 2usize + 1)?;
+            state.serialize_field(stringify!(link), &self.link)?;
+            state.serialize_field(stringify!(html), &self.html)?;
+            state.serialize_field("@type", "publicMessageLink")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a link to a message in a chat"]
     pub struct MessageLinkInfo {
         #[doc = "True, if the link is a public link for a message in a chat"]
@@ -5940,11 +8221,36 @@ pub mod types {
         #[doc = "True, if the whole media album to which the message belongs is linked"]
         pub for_album: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for MessageLinkInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(MessageLinkInfo), 4usize + 1)?;
+            state.serialize_field(stringify!(is_public), &self.is_public)?;
+            state.serialize_field(stringify!(chat_id), &self.chat_id)?;
+            state.serialize_field(stringify!(message), &self.message)?;
+            state.serialize_field(stringify!(for_album), &self.for_album)?;
+            state.serialize_field("@type", "messageLinkInfo")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a part of a file"]
     pub struct FilePart {
         #[doc = "File bytes"]
         pub data: String,
+    }
+    impl Serialize for FilePart {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(FilePart), 1usize + 1)?;
+            state.serialize_field(stringify!(data), &self.data)?;
+            state.serialize_field("@type", "filePart")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The data is not a file"]
@@ -6016,7 +8322,7 @@ pub mod types {
         FileTypeVoiceNote(FileTypeVoiceNote),
         FileTypeWallpaper(FileTypeWallpaper),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains the storage usage statistics for a specific file type"]
     pub struct StorageStatisticsByFileType {
         #[doc = "File type"]
@@ -6026,7 +8332,21 @@ pub mod types {
         #[doc = "Total number of files"]
         pub count: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for StorageStatisticsByFileType {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(StorageStatisticsByFileType), 3usize + 1)?;
+            state.serialize_field(stringify!(file_type), &self.file_type)?;
+            state.serialize_field(stringify!(size), &self.size)?;
+            state.serialize_field(stringify!(count), &self.count)?;
+            state.serialize_field("@type", "storageStatisticsByFileType")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains the storage usage statistics for a specific chat"]
     pub struct StorageStatisticsByChat {
         #[doc = "Chat identifier; 0 if none"]
@@ -6038,7 +8358,22 @@ pub mod types {
         #[doc = "Statistics split by file types"]
         pub by_file_type: Vec<StorageStatisticsByFileType>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for StorageStatisticsByChat {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(StorageStatisticsByChat), 4usize + 1)?;
+            state.serialize_field(stringify!(chat_id), &self.chat_id)?;
+            state.serialize_field(stringify!(size), &self.size)?;
+            state.serialize_field(stringify!(count), &self.count)?;
+            state.serialize_field(stringify!(by_file_type), &self.by_file_type)?;
+            state.serialize_field("@type", "storageStatisticsByChat")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains the exact storage usage statistics split by chats and file type"]
     pub struct StorageStatistics {
         #[doc = "Total size of files"]
@@ -6048,7 +8383,21 @@ pub mod types {
         #[doc = "Statistics split by chats"]
         pub by_chat: Vec<StorageStatisticsByChat>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for StorageStatistics {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(StorageStatistics), 3usize + 1)?;
+            state.serialize_field(stringify!(size), &self.size)?;
+            state.serialize_field(stringify!(count), &self.count)?;
+            state.serialize_field(stringify!(by_chat), &self.by_chat)?;
+            state.serialize_field("@type", "storageStatistics")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains approximate storage usage statistics, excluding files of unknown file type"]
     pub struct StorageStatisticsFast {
         #[doc = "Approximate total size of files"]
@@ -6062,11 +8411,42 @@ pub mod types {
         #[doc = "Size of the TDLib internal log"]
         pub log_size: i64,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for StorageStatisticsFast {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(StorageStatisticsFast), 5usize + 1)?;
+            state.serialize_field(stringify!(files_size), &self.files_size)?;
+            state.serialize_field(stringify!(file_count), &self.file_count)?;
+            state.serialize_field(stringify!(database_size), &self.database_size)?;
+            state.serialize_field(
+                stringify!(language_pack_database_size),
+                &self.language_pack_database_size,
+            )?;
+            state.serialize_field(stringify!(log_size), &self.log_size)?;
+            state.serialize_field("@type", "storageStatisticsFast")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains database statistics"]
     pub struct DatabaseStatistics {
         #[doc = "Database statistics in an unspecified human-readable format"]
         pub statistics: String,
+    }
+    impl Serialize for DatabaseStatistics {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(DatabaseStatistics), 1usize + 1)?;
+            state.serialize_field(stringify!(statistics), &self.statistics)?;
+            state.serialize_field("@type", "databaseStatistics")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The network is not available"]
@@ -6126,7 +8506,7 @@ pub mod types {
         NetworkStatisticsEntryFile(NetworkStatisticsEntryFile),
         NetworkStatisticsEntryCall(NetworkStatisticsEntryCall),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A full list of available network statistic entries"]
     pub struct NetworkStatistics {
         #[doc = "Point in time (Unix timestamp) when the app began collecting statistics"]
@@ -6134,7 +8514,20 @@ pub mod types {
         #[doc = "Network statistics entries"]
         pub entries: Vec<NetworkStatisticsEntry>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for NetworkStatistics {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(NetworkStatistics), 2usize + 1)?;
+            state.serialize_field(stringify!(since_date), &self.since_date)?;
+            state.serialize_field(stringify!(entries), &self.entries)?;
+            state.serialize_field("@type", "networkStatistics")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains auto-download settings"]
     pub struct AutoDownloadSettings {
         #[doc = "True, if the auto-download is enabled"]
@@ -6154,7 +8547,32 @@ pub mod types {
         #[doc = "True, if \"use less data for calls\" option needs to be enabled"]
         pub use_less_data_for_calls: bool,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for AutoDownloadSettings {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(AutoDownloadSettings), 8usize + 1)?;
+            state.serialize_field(
+                stringify!(is_auto_download_enabled),
+                &self.is_auto_download_enabled,
+            )?;
+            state.serialize_field(stringify!(max_photo_file_size), &self.max_photo_file_size)?;
+            state.serialize_field(stringify!(max_video_file_size), &self.max_video_file_size)?;
+            state.serialize_field(stringify!(max_other_file_size), &self.max_other_file_size)?;
+            state.serialize_field(stringify!(video_upload_bitrate), &self.video_upload_bitrate)?;
+            state.serialize_field(stringify!(preload_large_videos), &self.preload_large_videos)?;
+            state.serialize_field(stringify!(preload_next_audio), &self.preload_next_audio)?;
+            state.serialize_field(
+                stringify!(use_less_data_for_calls),
+                &self.use_less_data_for_calls,
+            )?;
+            state.serialize_field("@type", "autoDownloadSettings")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains auto-download settings presets for the user"]
     pub struct AutoDownloadSettingsPresets {
         #[doc = "Preset with lowest settings; supposed to be used by default when roaming"]
@@ -6163,6 +8581,20 @@ pub mod types {
         pub medium: AutoDownloadSettings,
         #[doc = "Preset with highest settings; supposed to be used by default when connected on Wi-Fi"]
         pub high: AutoDownloadSettings,
+    }
+    impl Serialize for AutoDownloadSettingsPresets {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(AutoDownloadSettingsPresets), 3usize + 1)?;
+            state.serialize_field(stringify!(low), &self.low)?;
+            state.serialize_field(stringify!(medium), &self.medium)?;
+            state.serialize_field(stringify!(high), &self.high)?;
+            state.serialize_field("@type", "autoDownloadSettingsPresets")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Currently waiting for the network to become available. Use setNetworkType to change the available network type"]
@@ -6256,10 +8688,10 @@ pub mod types {
     pub enum TMeUrlType {
         TMeUrlTypeUser(TMeUrlTypeUser),
         TMeUrlTypeSupergroup(TMeUrlTypeSupergroup),
-        TMeUrlTypeChatInvite(Box<TMeUrlTypeChatInvite>),
+        TMeUrlTypeChatInvite(TMeUrlTypeChatInvite),
         TMeUrlTypeStickerSet(TMeUrlTypeStickerSet),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a URL linking to an internal Telegram entity"]
     pub struct TMeUrl {
         #[doc = "URL"]
@@ -6268,37 +8700,108 @@ pub mod types {
         #[doc = "Type of the URL"]
         pub type_: TMeUrlType,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for TMeUrl {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(TMeUrl), 2usize + 1)?;
+            state.serialize_field(stringify!(url), &self.url)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field("@type", "tMeUrl")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of t.me URLs"]
     pub struct TMeUrls {
         #[doc = "List of URLs"]
         pub urls: Vec<TMeUrl>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for TMeUrls {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(TMeUrls), 1usize + 1)?;
+            state.serialize_field(stringify!(urls), &self.urls)?;
+            state.serialize_field("@type", "tMeUrls")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a counter"]
     pub struct Count {
         #[doc = "Count"]
         pub count: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Count {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Count), 1usize + 1)?;
+            state.serialize_field(stringify!(count), &self.count)?;
+            state.serialize_field("@type", "count")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains some text"]
     pub struct Text {
         #[doc = "Text"]
         pub text: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Text {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Text), 1usize + 1)?;
+            state.serialize_field(stringify!(text), &self.text)?;
+            state.serialize_field("@type", "text")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a value representing a number of seconds"]
     pub struct Seconds {
         #[doc = "Number of seconds"]
         pub seconds: f64,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Seconds {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Seconds), 1usize + 1)?;
+            state.serialize_field(stringify!(seconds), &self.seconds)?;
+            state.serialize_field("@type", "seconds")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a tg:// deep link"]
     pub struct DeepLinkInfo {
         #[doc = "Text to be shown to the user"]
         pub text: FormattedText,
         #[doc = "True, if user should be asked to update the application"]
         pub need_update_application: bool,
+    }
+    impl Serialize for DeepLinkInfo {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(DeepLinkInfo), 2usize + 1)?;
+            state.serialize_field(stringify!(text), &self.text)?;
+            state.serialize_field(
+                stringify!(need_update_application),
+                &self.need_update_application,
+            )?;
+            state.serialize_field("@type", "deepLinkInfo")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The text should be parsed in markdown-style"]
@@ -6350,7 +8853,7 @@ pub mod types {
         ProxyTypeHttp(ProxyTypeHttp),
         ProxyTypeMtproto(ProxyTypeMtproto),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains information about a proxy server"]
     pub struct Proxy {
         #[doc = "Unique identifier of the proxy"]
@@ -6367,13 +8870,40 @@ pub mod types {
         #[doc = "Type of the proxy"]
         pub type_: ProxyType,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Proxy {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Proxy), 6usize + 1)?;
+            state.serialize_field(stringify!(id), &self.id)?;
+            state.serialize_field(stringify!(server), &self.server)?;
+            state.serialize_field(stringify!(port), &self.port)?;
+            state.serialize_field(stringify!(last_used_date), &self.last_used_date)?;
+            state.serialize_field(stringify!(is_enabled), &self.is_enabled)?;
+            state.serialize_field(stringify!(type_), &self.type_)?;
+            state.serialize_field("@type", "proxy")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Represents a list of proxy servers"]
     pub struct Proxies {
         #[doc = "List of proxy servers"]
         pub proxies: Vec<Proxy>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for Proxies {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Proxies), 1usize + 1)?;
+            state.serialize_field(stringify!(proxies), &self.proxies)?;
+            state.serialize_field("@type", "proxies")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Describes a sticker that should be added to a sticker set"]
     pub struct InputSticker {
         #[doc = "PNG image with the sticker; must be up to 512 kB in size and fit in a 512x512 square"]
@@ -6383,6 +8913,19 @@ pub mod types {
         #[serde(default)]
         #[doc = "For masks, position where the mask should be placed; may be null"]
         pub mask_position: Option<MaskPosition>,
+    }
+    impl Serialize for InputSticker {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(InputSticker), 3usize + 1)?;
+            state.serialize_field(stringify!(png_sticker), &self.png_sticker)?;
+            state.serialize_field(stringify!(emojis), &self.emojis)?;
+            state.serialize_field(stringify!(mask_position), &self.mask_position)?;
+            state.serialize_field("@type", "inputSticker")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The user authorization state has changed"]
@@ -7102,7 +9645,7 @@ pub mod types {
         UpdateMessageContentOpened(UpdateMessageContentOpened),
         UpdateMessageMentionRead(UpdateMessageMentionRead),
         UpdateMessageLiveLocationViewed(UpdateMessageLiveLocationViewed),
-        UpdateNewChat(Box<UpdateNewChat>),
+        UpdateNewChat(UpdateNewChat),
         UpdateChatChatList(UpdateChatChatList),
         UpdateChatTitle(UpdateChatTitle),
         UpdateChatPhoto(UpdateChatPhoto),
@@ -7168,11 +9711,22 @@ pub mod types {
         UpdatePoll(UpdatePoll),
         UpdatePollAnswer(UpdatePollAnswer),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of updates"]
     pub struct Updates {
         #[doc = "List of updates"]
         pub updates: Vec<Update>,
+    }
+    impl Serialize for Updates {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(Updates), 1usize + 1)?;
+            state.serialize_field(stringify!(updates), &self.updates)?;
+            state.serialize_field("@type", "updates")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[doc = "The log is written to stderr or an OS specific log"]
@@ -7197,59 +9751,162 @@ pub mod types {
         LogStreamFile(LogStreamFile),
         LogStreamEmpty(LogStreamEmpty),
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a TDLib internal log verbosity level"]
     pub struct LogVerbosityLevel {
         #[doc = "Log verbosity level"]
         pub verbosity_level: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for LogVerbosityLevel {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(LogVerbosityLevel), 1usize + 1)?;
+            state.serialize_field(stringify!(verbosity_level), &self.verbosity_level)?;
+            state.serialize_field("@type", "logVerbosityLevel")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "Contains a list of available TDLib internal log tags"]
     pub struct LogTags {
         #[doc = "List of log tags"]
         pub tags: Vec<String>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for LogTags {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(LogTags), 1usize + 1)?;
+            state.serialize_field(stringify!(tags), &self.tags)?;
+            state.serialize_field("@type", "logTags")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A simple object containing a number; for testing only"]
     pub struct TestInt {
         #[doc = "Number"]
         pub value: i32,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for TestInt {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(TestInt), 1usize + 1)?;
+            state.serialize_field(stringify!(value), &self.value)?;
+            state.serialize_field("@type", "testInt")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A simple object containing a string; for testing only"]
     pub struct TestString {
         #[doc = "String"]
         pub value: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for TestString {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(TestString), 1usize + 1)?;
+            state.serialize_field(stringify!(value), &self.value)?;
+            state.serialize_field("@type", "testString")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A simple object containing a sequence of bytes; for testing only"]
     pub struct TestBytes {
         #[doc = "Bytes"]
         pub value: String,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for TestBytes {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(TestBytes), 1usize + 1)?;
+            state.serialize_field(stringify!(value), &self.value)?;
+            state.serialize_field("@type", "testBytes")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A simple object containing a vector of numbers; for testing only"]
     pub struct TestVectorInt {
         #[doc = "Vector of numbers"]
         pub value: Vec<i32>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for TestVectorInt {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state = serializer.serialize_struct(stringify!(TestVectorInt), 1usize + 1)?;
+            state.serialize_field(stringify!(value), &self.value)?;
+            state.serialize_field("@type", "testVectorInt")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A simple object containing a vector of objects that hold a number; for testing only"]
     pub struct TestVectorIntObject {
         #[doc = "Vector of objects"]
         pub value: Vec<TestInt>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for TestVectorIntObject {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(TestVectorIntObject), 1usize + 1)?;
+            state.serialize_field(stringify!(value), &self.value)?;
+            state.serialize_field("@type", "testVectorIntObject")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A simple object containing a vector of strings; for testing only"]
     pub struct TestVectorString {
         #[doc = "Vector of strings"]
         pub value: Vec<String>,
     }
-    #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+    impl Serialize for TestVectorString {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(TestVectorString), 1usize + 1)?;
+            state.serialize_field(stringify!(value), &self.value)?;
+            state.serialize_field("@type", "testVectorString")?;
+            state.end()
+        }
+    }
+    #[derive(Deserialize, Debug, Clone, PartialEq)]
     #[doc = "A simple object containing a vector of objects that hold a string; for testing only"]
     pub struct TestVectorStringObject {
         #[doc = "Vector of objects"]
         pub value: Vec<TestString>,
+    }
+    impl Serialize for TestVectorStringObject {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            let mut state =
+                serializer.serialize_struct(stringify!(TestVectorStringObject), 1usize + 1)?;
+            state.serialize_field(stringify!(value), &self.value)?;
+            state.serialize_field("@type", "testVectorStringObject")?;
+            state.end()
+        }
     }
     #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
     #[serde(rename_all = "camelCase")]
